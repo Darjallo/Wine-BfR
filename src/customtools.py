@@ -55,6 +55,55 @@ def german_df_processing(df, exclude_columns):
     return pd.concat([df_transformed, df[exclude_columns]], axis=1)        
  
     
+def process_splmp(df, col):
+    """Handles the 'splmp' preprocessing step."""
+    max_val = len(df)
+    number = st.slider("Select a sample to display", min_value=1, max_value=max_val)
+
+    if st.session_state['processed_splmp'] is None:
+        df_data = treshold(df, col)
+        df_norm = splmp(df_data)
+        st.session_state['processed_treshold'] = df_data
+        st.session_state['processed_splmp'] = df_norm
+    else:
+        df_data = st.session_state['processed_treshold']
+        df_norm = st.session_state['processed_splmp']
+
+    # Display the plot
+    splmp_plot(df_data, df_norm, number)
+    return df_norm, None
+
+#  Plot `splmp` Results
+def splmp_plot(df_data, df_norm, number):
+    """Plots original vs modified data."""
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    x = list(df_data.columns)
+    y_original = df_data.iloc[number, :].tolist()
+    y_modified = df_norm.iloc[number, :].tolist()
+
+    ax[0].plot(x, y_original)
+    ax[0].set_title('Original')
+    ax[0].set_xlabel('X-Axis Label')
+    ax[0].set_ylabel('Y-Axis Label')
+
+    ax[1].plot(x, y_modified, 'r')
+    ax[1].set_title('Modified')
+    ax[1].set_xlabel('X-Axis Label')
+    ax[1].set_ylabel('Y-Axis Label')
+
+    plt.tight_layout()
+    st.pyplot(fig)
+
+#  Handle "Other?" Option
+def display_other_plot():
+    """Displays a sample plot for the 'Other?' preprocessing option."""
+    fig, ax = plt.subplots()
+    x = np.arange(0, 10, 0.1)
+    y = np.cos(x)
+    ax.plot(x, y, '*r')
+    ax.set_title("Other")
+    st.pyplot(fig)
+    
 def treshold(df, col):
     
     # threshold above 0

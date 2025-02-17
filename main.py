@@ -26,149 +26,189 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from src.customtools import file_format_verification, file2df, treshold, splmp,\
-    normal, dim_reduction, clustering, german_df_processing
+import src.customtools as ct
 
-if 'sep' not in st.session_state:
-    st.session_state['sep']=','
-if 'processed_treshold' not in st.session_state:
-    st.session_state['processed_treshold']=None
-if 'processed_splmp' not in st.session_state:
-    st.session_state['processed_splmp']=None
+    
+# Initialize session state variables
+for key, default_value in {"sep": ",", 
+                           "df": None,
+                           "groups": None,
+                           "col": None,
+                           "processed_treshold": None, 
+                           "processed_splmp": None,
+                           "step_1_ok": False,
+                           "step_2_ok": False,
+                           "df_norm1": None,
+                           }.items():
+    if key not in st.session_state:
+        st.session_state[key] = default_value
+
 
 # Title of the app
 st.title("App for KIDA conference")
 #______________________________________________________________________________
 # Step 1: File Upload
 st.info('Some details on how the file with the data should look like')
-data_type = st.radio("Please select data type of your csv:",\
-                           ["American",\
-                            "German"],
-                            #index=None  # No option is selected initially
-                            index=0
-                            )
-
-if data_type=='American':
-    st.session_state['sep']=','
-elif data_type=='German':
-    st.session_state['sep']=';'
-
-uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
 
 #______________________________________________________________________________
-# Step 2: Check if the file format is correct
-if file_format_verification(uploaded_file):
-    df = file2df(uploaded_file)
-    st.success("File is uploaded:")
-    # Show the DataFrame if the file is valid
-    st.write(df.head())
-else:
-    st.info("Please upload a file.")
-  
-# Radio button for the user to select between two options
-if 'df' in locals():
-    selected_data_type = st.radio("Please select one of the following options:",\
-                               ["This is the data with unknown labels",\
-                                "This is the test data with known labels"],
-                                index=None  # No option is selected initially
-                                )
+# 📌 Step 1: Data upload
+# Uploading form
+with st.form("data_upload_form"):
+    st.write("### Upload and Configure Your Data")
+
+    # Data type selection
+    data_type = st.radio("Please select data type of your CSV:", 
+                         ["American", "German"], 
+                         index=0, # no option is selected initially
+                         )
+
+    # File uploader
+    uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
+
+    # Data classification selection
+    selected_data_type = st.radio("Please select one of the following options:",
+                                  ["This is the data with unknown labels", 
+                                   "This is the test data with known labels"],
+                                  index=None)
+
+    # Submit button
+    submit_button_1 = st.form_submit_button("Submit")
     
-    # Ensuring the user selects an option and confirms the selection
-    if selected_data_type:
-        st.success(f"You selected: {selected_data_type}")
-        if selected_data_type=="This is the data with unknown labels":
-            col=[]
-            groups=None
-            if data_type=='German':
-                df = german_df_processing(df, col)
-        else:
-            col=[df.columns[0]]
-            groups=df[df.columns[0]] # groups with labels
-            if data_type=='German':
-                df = german_df_processing(df, col)
+#______________________________________________________________________________
 
+@st.cache_data
+def file_upload(data_type, uploaded_file, selected_data_type):
+    """
+    Uploads file, verifies format, processes it, and handles preprocessing.
+
+    """
+    if not uploaded_file:
+        st.warning("Please upload a file.")
+        return None, None
+    
+    # Set CSV separator based on data type
+    st.session_state['sep'] = ',' if data_type == 'American' else ';' #German
+
+    
+    # Verify file format and read data
+    if not ct.file_format_verification(uploaded_file):
+        st.error("Invalid file format. Please upload a valid CSV or Excel file.")
+        return None, None
+    
+    df = ct.file2df(uploaded_file)
+    st.success("✅ File successfully uploaded.")
+    st.write(df.head())
+    
+    
+    # Handling labeled vs unlabeled data
+    col, groups = [], None
+    if selected_data_type == "This is the data with unknown labels":
+        if data_type == 'German':
+            df = ct.german_df_processing(df, col)
+    elif selected_data_type == "This is the test data with known labels":
+        col = [df.columns[0]] # name of the column that contains info about labels
+        groups = df[df.columns[0]]
+        if data_type == 'German':
+            df = ct.german_df_processing(df, col)
     else:
-        st.warning("Please select an option.")
-        
-        
+        st.warning("⚠ Please select a valid data type option.")
+        return None, None
+
+    # groups is a column with labels
+    return df, groups, col
 
 
+if submit_button_1:
+    df, groups, col = file_upload(data_type, uploaded_file, selected_data_type)
+    st.session_state['df'] = df
+    st.session_state['groups'] = groups
+    st.session_state['col'] = col
+    
+    
+    
+    if df is not None:
+        st.session_state["step_1_ok"] = True
+
+# st.write('df' in locals())
+# df disappears after the second button is pressed
+df = st.session_state['df'] 
+groups = st.session_state['groups'] 
+col = st.session_state['col'] 
 
 #______________________________________________________________________________
-# Step 3: User selects first step (splmp)
-    st.write('1. Select feature selection algorithm')
-    if selected_data_type:
-        dataprep1 = st.selectbox("Select an action", ["None", "splmp", "Other?"], index=None)
-
-#______________________________________________________________________________
-# Step 4: User selects an integer number from a range to plot the data
-if 'dataprep1' in locals() and dataprep1 is not None:
-    #if any preprocessing procedure was selected
-    if dataprep1 == "splmp":
-        # if splmp step was selected
-        max_val=len(df)
-        number = st.slider("Select the sample to display", min_value=1, max_value=max_val)
+# 📌 Step 2: First dataprocessing step (splmp, for example)
+st.write(st.session_state["step_1_ok"])
+if st.session_state["step_1_ok"] == True:
+    
+    with st.form("data_normalise_form"):
+        st.write("### Normalise Your Data (Pretreatment and Scaling)")
+    
+        # Select data normalisation algorithm
+        dataprep1 = st.selectbox("Select an action", 
+                                 ["None", "splmp", "Other?"], 
+                                 index=None, # no option is selected initially
+                                 )
+        max_val = len(df)
+        number = st.slider("Select a sample to display", 
+                           min_value=1, max_value=max_val)
+            
+        # Submit button
+        submit_button_2 = st.form_submit_button("Submit")
         
         
-        
-        if st.session_state['processed_splmp'] is None:
-            df_data = treshold(df, col)
-            df = splmp(df_data)
-            st.session_state['processed_treshold']=df_data
-            st.session_state['processed_splmp']=df
-        else: 
-            df_data = st.session_state['processed_treshold']
-            df = st.session_state['processed_splmp']
+    @st.cache_data
+    def first_processing(df, dataprep1, col, number):
+        """
+        Feature Selection (splmp)
+    
+        """
+        if dataprep1 == "Other?":
+            ct.display_other_plot()
+            df_norm=df
+        elif dataprep1 == "splmp":
+            
+            df_data = ct.treshold(df, col) # is this needed??->yes
+            st.write(df.equals(df_data)) # -> False
+            st.write(df.head())
+            st.write(df_data.head())
+            df_norm = ct.splmp(df_data)
+            ct.splmp_plot(df_data, df_norm, number)
 
-        # Display corresponding plot
-        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-        # Data for the plots
-        x = list(df_data.columns)
-        y = df_data.iloc[number, :].to_list()
-        y_new = df.iloc[number, :].to_list()       
-        # Plot for the original data on the left
-        ax[0].plot(x, y)
-        ax[0].set_title('Original')
-        ax[0].set_xlabel('X-Axis Label')
-        ax[0].set_ylabel('Y-Axis Label')       
-        # Plot for the modified data on the right
-        ax[1].plot(x, y_new, 'r')
-        ax[1].set_title('Modified')
-        ax[1].set_xlabel('X-Axis Label')
-        ax[1].set_ylabel('Y-Axis Label') 
-        # Adjust layout to prevent overlap
-        plt.tight_layout()     
-        st.pyplot(fig)
-    elif dataprep1 == "Other?":
-        # Display corresponding plot
-        fig, ax = plt.subplots()
-        x = np.arange(0, 10, 0.1)
-        y = np.cos(1 * x)  # Use the selected number to adjust the frequency
-        ax.plot(x, y, '*r')
-        ax.set_title("Other")
-        st.pyplot(fig)
 
-    st.write('2. Decide about normalization')
-    dataprep2 = st.selectbox("Select normalization", ["None", "StandardScaler", "Other?"], index=None)
+        st.session_state["step_2_ok"] = True
+        return df_norm
+    
+if submit_button_2:
+    df_norm1 = first_processing(df, dataprep1, col, number)
+    st.session_state["step_2_ok"] = True
+    st.session_state["df_norm1"] = df_norm1
+
+df_norm1 = st.session_state["df_norm1"]
+
+
+
+
+st.write('2. Decide about normalization')
+dataprep2 = st.selectbox("Select normalization", ["None", "StandardScaler", "Other?"], index=None)
 #______________________________________________________________________________
 # Step 5: Data normalization
-    if 'dataprep2' in locals() and dataprep2 is not None:
-        vals = normal(df, dataprep2)
-        
-        st.write('3. Select dimention reduction algorithm')
-        dataprep3= st.selectbox("Select step", ["None", "UMAP", "Other?"], index=None)
-        
+if 'dataprep2' in locals() and dataprep2 is not None:
+    vals = ct.normal(df, dataprep2)
+    
+    st.write('3. Select dimention reduction algorithm')
+    dataprep3= st.selectbox("Select step", ["None", "UMAP", "Other?"], index=None)
+    
 #______________________________________________________________________________
 # Step 6: Apply UMAP
-        if 'dataprep3' in locals() and dataprep3 is not None:
-            output = dim_reduction(vals, dataprep3)
-            st.write('4. Select clustering algorithm')
-            dataprep4 = st.selectbox("Select step", ["None", "HDBSCAN", "Other?"], index=None)
-            
-    #______________________________________________________________________________
-            # Step 7: Apply HDBSCAN
-            if 'dataprep4' in locals() and dataprep4 is not None:
-                clustering(output, dataprep4, groups)
-                    
-                st.success('Analysis finished')
+    if 'dataprep3' in locals() and dataprep3 is not None:
+        output = ct.dim_reduction(vals, dataprep3)
+        st.write('4. Select clustering algorithm')
+        dataprep4 = st.selectbox("Select step", ["None", "HDBSCAN", "Other?"], index=None)
+        
+#______________________________________________________________________________
+        # Step 7: Apply HDBSCAN
+        if 'dataprep4' in locals() and dataprep4 is not None:
+            ct.clustering(output, dataprep4, groups)
+                
+            st.success('Analysis finished')
 
