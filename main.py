@@ -38,7 +38,9 @@ for key, default_value in {"sep": ",",
                            "processed_splmp": None,
                            "step_1_ok": False,
                            "step_2_ok": False,
+                           "step_3_ok": False,
                            "df_norm1": None,
+                           "df_dimred": None,
                            }.items():
     if key not in st.session_state:
         st.session_state[key] = default_value
@@ -162,53 +164,81 @@ if st.session_state["step_1_ok"] == True:
         Feature Selection (splmp)
     
         """
+        #remove column "group" if present
+        df_data = ct.treshold(df, col) 
+        
         if dataprep1 == "Other?":
             ct.display_other_plot()
-            df_norm=df
+            df_norm=df_data
         elif dataprep1 == "splmp":
-            
-            df_data = ct.treshold(df, col) # is this needed??->yes
-            st.write(df.equals(df_data)) # -> False
-            st.write(df.head())
-            st.write(df_data.head())
             df_norm = ct.splmp(df_data)
             ct.splmp_plot(df_data, df_norm, number)
+        
+        else:
+            df_norm=None
 
-
-        st.session_state["step_2_ok"] = True
         return df_norm
     
-if submit_button_2:
-    df_norm1 = first_processing(df, dataprep1, col, number)
+if 'submit_button_2' in locals(): #??
+    df_norm1 = first_processing(df, dataprep1, col, number)   #  after slpm
     st.session_state["step_2_ok"] = True
     st.session_state["df_norm1"] = df_norm1
 
 df_norm1 = st.session_state["df_norm1"]
+st.write(df_norm1.head())
 
-
-
-
-st.write('2. Decide about normalization')
-dataprep2 = st.selectbox("Select normalization", ["None", "StandardScaler", "Other?"], index=None)
 #______________________________________________________________________________
-# Step 5: Data normalization
-if 'dataprep2' in locals() and dataprep2 is not None:
-    vals = ct.normal(df, dataprep2)
+# 📌 Step 3: Standard Scaler and dimention reduction
+st.write(st.session_state["step_2_ok"])
+if st.session_state["step_2_ok"] == True:
     
-    st.write('3. Select dimention reduction algorithm')
-    dataprep3= st.selectbox("Select step", ["None", "UMAP", "Other?"], index=None)
-    
-#______________________________________________________________________________
-# Step 6: Apply UMAP
-    if 'dataprep3' in locals() and dataprep3 is not None:
-        output = ct.dim_reduction(vals, dataprep3)
-        st.write('4. Select clustering algorithm')
-        dataprep4 = st.selectbox("Select step", ["None", "HDBSCAN", "Other?"], index=None)
+    with st.form("dimention_reduction"):
+        st.write("### Standard Scaler ?")
+        scaler = st.selectbox("Select normalization", 
+                              ["None", "StandardScaler", "Other?"], 
+                              index=None)
         
-#______________________________________________________________________________
-        # Step 7: Apply HDBSCAN
-        if 'dataprep4' in locals() and dataprep4 is not None:
-            ct.clustering(output, dataprep4, groups)
+        st.write("### Dimention reduction")
+    
+        # Select dim red algorithm
+        dimred = st.selectbox("Select dimention reduction method", 
+                                 ["None", "UMAP", "Other?"], 
+                                 index=None, # no option is selected initially
+                                 )
+            
+        # Submit button
+        submit_button_3 = st.form_submit_button("Submit")
+        
+        @st.cache_data
+        def scale_dimred(df, scaler, dimred):
+            """
+            do we need scaling here or before feature selection??
+
+            """
+            vals = ct.normal(df, scaler)
+            output_dimred = ct.dim_reduction(vals, dimred)
+            st.session_state["step_3_ok"] = True
+            return output_dimred
+
+
+if 'submit_button_3' in locals():
+    if submit_button_3:
+        st.write(submit_button_3)
+        df_dimred = scale_dimred(df_norm1, scaler, dimred)
+        st.session_state["df_dimred"] = df_dimred
+        st.session_state["step_3_ok"] = True
+        
+df_dimred = st.session_state["df_dimred"]
+
+
+
+#         st.write('4. Select clustering algorithm')
+#         dataprep4 = st.selectbox("Select step", ["None", "HDBSCAN", "Other?"], index=None)
+        
+# #______________________________________________________________________________
+#         # Step 7: Apply HDBSCAN
+#         if 'dataprep4' in locals() and dataprep4 is not None:
+#             ct.clustering(output, dataprep4, groups)
                 
-            st.success('Analysis finished')
+#             st.success('Analysis finished')
 
