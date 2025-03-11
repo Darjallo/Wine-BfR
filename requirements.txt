@@ -1,0 +1,5 @@
+matplotlib
+plotly
+streamlit
+scikit-learn
+umap-learn

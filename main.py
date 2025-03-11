@@ -31,16 +31,16 @@ import src.customtools as ct
     
 # Initialize session state variables
 for key, default_value in {"sep": ",", 
-                           "df": None,
-                           "groups": None,
-                           "col": None,
+                           "df": None, # original data from file
+                           "groups": None, # column with data on entry labels
+                           "col": None,  # name of the column that contains info about labels
                            "processed_treshold": None, 
                            "processed_splmp": None,
                            "step_1_ok": False,
                            "step_2_ok": False,
                            "step_3_ok": False,
-                           "df_norm1": None,
-                           "df_dimred": None,
+                           "df_norm1": pd.DataFrame(),
+                           "df_dimred": pd.DataFrame(),
                            }.items():
     if key not in st.session_state:
         st.session_state[key] = default_value
@@ -83,10 +83,17 @@ def file_upload(data_type, uploaded_file, selected_data_type):
     """
     Uploads file, verifies format, processes it, and handles preprocessing.
 
+    Args:
+        data_type (str): Type of data ('American' or 'German').
+        uploaded_file (file): The uploaded file object.
+        selected_data_type (str): The type of data (labeled or unlabeled).
+        
+    Returns:
+        pd.DataFrame, list, list: Processed DataFrame, groups (if labeled), column names for labels
     """
     if not uploaded_file:
         st.warning("Please upload a file.")
-        return None, None
+        return pd.DataFrame(), None, None
     
     # Set CSV separator based on data type
     st.session_state['sep'] = ',' if data_type == 'American' else ';' #German
@@ -95,9 +102,15 @@ def file_upload(data_type, uploaded_file, selected_data_type):
     # Verify file format and read data
     if not ct.file_format_verification(uploaded_file):
         st.error("Invalid file format. Please upload a valid CSV or Excel file.")
-        return None, None
+        return pd.DataFrame(), None, None
     
-    df = ct.file2df(uploaded_file)
+    # Convert file to DataFrame
+    try:
+        df = ct.file2df(uploaded_file)
+    except Exception as e:
+        st.error(f"Error reading the file: {e}")
+        return pd.DataFrame(), None, None
+
     st.success("✅ File successfully uploaded.")
     st.write(df.head())
     
@@ -114,7 +127,7 @@ def file_upload(data_type, uploaded_file, selected_data_type):
             df = ct.german_df_processing(df, col)
     else:
         st.warning("⚠ Please select a valid data type option.")
-        return None, None
+        return pd.DataFrame(), None, None
 
     # groups is a column with labels
     return df, groups, col
@@ -175,17 +188,20 @@ if st.session_state["step_1_ok"] == True:
             ct.splmp_plot(df_data, df_norm, number)
         
         else:
-            df_norm=None
+            df_norm=df_data
+            st.warning("⚠ Are you sure you want no processing at this step?")
 
         return df_norm
     
 if 'submit_button_2' in locals(): #??
-    df_norm1 = first_processing(df, dataprep1, col, number)   #  after slpm
-    st.session_state["step_2_ok"] = True
-    st.session_state["df_norm1"] = df_norm1
+    if submit_button_2:
+        df_norm1 = first_processing(df, dataprep1, col, number)   # after slpm
+        st.session_state["step_2_ok"] = True
+        st.session_state["df_norm1"] = df_norm1
 
 df_norm1 = st.session_state["df_norm1"]
-st.write(df_norm1.head())
+if len(df_norm1)>0:
+    st.write(df_norm1.head())
 
 #______________________________________________________________________________
 # 📌 Step 3: Standard Scaler and dimention reduction
@@ -209,16 +225,16 @@ if st.session_state["step_2_ok"] == True:
         # Submit button
         submit_button_3 = st.form_submit_button("Submit")
         
-        @st.cache_data
-        def scale_dimred(df, scaler, dimred):
-            """
-            do we need scaling here or before feature selection??
+@st.cache_data
+def scale_dimred(df, scaler, dimred):
+    """
+    do we need scaling here or before feature selection??
 
-            """
-            vals = ct.normal(df, scaler)
-            output_dimred = ct.dim_reduction(vals, dimred)
-            st.session_state["step_3_ok"] = True
-            return output_dimred
+    """
+    vals = ct.normal(df, scaler)
+    output_dimred = ct.dim_reduction(vals, dimred)
+    st.session_state["step_3_ok"] = True
+    return output_dimred
 
 
 if 'submit_button_3' in locals():
