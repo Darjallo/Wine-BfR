@@ -193,13 +193,26 @@ def dim_reduction(vals, dataprep):
     if dataprep == 'UMAP':
         embedding = apply_umap(vals)
         # figure
+        groups = st.session_state["groups"]
+        unique_groups = list(set(groups))  # Get unique group labels
+        group_colors = {group: plt.cm.tab10(i) for i, group 
+                        in enumerate(unique_groups)}  # Assign colors
+
+        # Map each group label to its color
+        colors = [group_colors[group] for group in groups]
+
         fig, ax = plt.subplots()
         ax.scatter(
             embedding[:, 0],
             embedding[:, 1],
-            #c = [x for x in df['Type of wine'].map({"Red":'red', "white":'black',})]
-            #c = [x for x in df['group'].map({'A': 'red', 'B': 'blue', 'C': 'green', 'D': 'black', 'E': 'yellow'})]
+            c=colors,
+            alpha=0.6
+           
         )
+        handles = [plt.Line2D([0], [0], marker='o', color='w', 
+                              markerfacecolor=group_colors[group], markersize=10) 
+           for group in unique_groups]
+        ax.legend(handles, unique_groups, title="Groups")
         ax.set_title('UMAP')
    
         st.pyplot(fig)
