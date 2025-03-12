@@ -38,9 +38,13 @@ for key, default_value in {"sep": ",",
                            "processed_splmp": None,
                            "step_1_ok": False,
                            "step_2_ok": False,
-                           "step_3_ok": False,
+                           "step_3_1_ok": False, # algorithm selection
+                           "step_3_2_ok": False, # parameter selection
                            "df_norm1": pd.DataFrame(),
                            "df_dimred": pd.DataFrame(),
+                           "dimred": None, # dimention reduction algorithm selected
+                           "umap_neigh": 15,
+                           "umap_min_dist": 0.5,
                            }.items():
     if key not in st.session_state:
         st.session_state[key] = default_value
@@ -221,10 +225,28 @@ if st.session_state["step_2_ok"] == True:
                                  ["None", "UMAP", "Other?"], 
                                  index=None, # no option is selected initially
                                  )
+        st.session_state["dimred"] = dimred
             
         # Submit button
-        submit_button_3 = st.form_submit_button("Submit")
+        submit_button_3_1 = st.form_submit_button("Submit")
         
+if 'submit_button_3_1' in locals():
+    if submit_button_3_1:
+        st.session_state["step_3_1_ok"] = True
+        
+st.write(st.session_state["step_3_1_ok"])
+if st.session_state["step_3_1_ok"] == True:
+    # depending on selected dimention reduction method
+    with st.form("dim_red_param"):
+        st.write("#### UMAP parameters")
+        neigh = st.slider("Select the number of neighbors", 
+                          min_value=1, max_value=100, value=15)
+        min_dist = st.slider("Select the distance", 
+                             min_value=0.0, max_value=1.0, value=0.5)
+        st.session_state["umap_neigh"] = int(neigh)
+        st.session_state["umap_min_dist"] = float(min_dist)
+        submit_button_3_2 = st.form_submit_button("Submit")
+
 @st.cache_data
 def scale_dimred(df, scaler, dimred):
     """
@@ -233,21 +255,38 @@ def scale_dimred(df, scaler, dimred):
     """
     vals = ct.normal(df, scaler)
     output_dimred = ct.dim_reduction(vals, dimred)
-    st.session_state["step_3_ok"] = True
+    #st.session_state["step_3_2_ok"] = True
     return output_dimred
 
-
-if 'submit_button_3' in locals():
-    if submit_button_3:
-        st.write(submit_button_3)
-        df_dimred = scale_dimred(df_norm1, scaler, dimred)
+if 'submit_button_3_2' in locals():
+    if submit_button_3_2:
+        st.write(submit_button_3_2)
+        st.write(st.session_state["dimred"])
+        df_dimred = scale_dimred(df_norm1, scaler, st.session_state["dimred"])
         st.session_state["df_dimred"] = df_dimred
-        st.session_state["step_3_ok"] = True
+        st.session_state["step_3_2_ok"] = True
         
 df_dimred = st.session_state["df_dimred"]
 
+if st.session_state["step_3_2_ok"] == True:
+    # Select clustering algorithm
+    with st.form("clustering"):
+        st.write("### Clustering method")
+        cluster = st.selectbox("Select clustering algorithm", 
+                                 ["None", "HDBSCAN", "Other?"], index=None)
+        st.session_state["cluster_alg"] = cluster
+        submit_button_4 = st.form_submit_button("Submit")
 
-
+if 'submit_button_4' in locals():
+    if submit_button_4:
+        ct.clustering(df_dimred, st.session_state["cluster_alg"], 
+                      st.session_state['groups'])
+        st.session_state["step_4_ok"] = True
+        
+#@st.cache_data
+#def do_clustering():  #(df_dimred, st.session_state["cluster_alg"], groups):
+    
+    
 #         st.write('4. Select clustering algorithm')
 #         dataprep4 = st.selectbox("Select step", ["None", "HDBSCAN", "Other?"], index=None)
         

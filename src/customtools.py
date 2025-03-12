@@ -183,8 +183,8 @@ def normal(df, dataprep2):
 
 
 def apply_umap(vals):
-    neigh = st.slider("Select the number of neighbors", min_value=1, max_value=100, value=15)
-    min_dist = st.slider("Select the number of neighbors", min_value=0.0, max_value=1.0, value=0.5)
+    neigh = st.session_state["umap_neigh"]
+    min_dist = st.session_state["umap_min_dist"]
     reducer = umap.UMAP(n_neighbors=neigh, min_dist=min_dist,)
     embedding = reducer.fit_transform(vals)
     return embedding
@@ -206,11 +206,13 @@ def dim_reduction(vals, dataprep):
             embedding[:, 0],
             embedding[:, 1],
             c=colors,
+            edgecolors="none",
             alpha=0.6
            
         )
         handles = [plt.Line2D([0], [0], marker='o', color='w', 
-                              markerfacecolor=group_colors[group], markersize=10) 
+                              markerfacecolor=group_colors[group], alpha=0.6, 
+                              markersize=10) 
            for group in unique_groups]
         ax.legend(handles, unique_groups, title="Groups")
         ax.set_title('UMAP')
