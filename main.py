@@ -27,6 +27,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import src.customtools as ct
+import src.forms as f
 
     
 # Initialize session state variables
@@ -58,28 +59,13 @@ st.info('Some details on how the file with the data should look like')
 
 #______________________________________________________________________________
 # 📌 Step 1: Data upload
-# Uploading form
-with st.form("data_upload_form"):
-    st.write("### Upload and Configure Your Data")
 
-    # Data type selection
-    data_type = st.radio("Please select data type of your CSV:", 
-                         ["American", "German"], 
-                         index=0, # no option is selected initially
-                         )
+# data type German or American
+# with or without labels 
+# file formats csv, txt, xlsx
 
-    # File uploader
-    uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
+data_type, uploaded_file, selected_data_type, submit_button_1 = f.data_upload_form()
 
-    # Data classification selection
-    selected_data_type = st.radio("Please select one of the following options:",
-                                  ["This is the data with unknown labels", 
-                                   "This is the test data with known labels"],
-                                  index=None)
-
-    # Submit button
-    submit_button_1 = st.form_submit_button("Submit")
-    
 #______________________________________________________________________________
 
 @st.cache_data
@@ -158,25 +144,11 @@ col = st.session_state['col']
 # 📌 Step 2: First dataprocessing step (splmp, for example)
 st.write(st.session_state["step_1_ok"])
 if st.session_state["step_1_ok"] == True:
+    dataprep1, sample_idx, submit_button_2 = f.data_norm_form(len(df))
     
-    with st.form("data_normalise_form"):
-        st.write("### Normalise Your Data (Pretreatment and Scaling)")
-    
-        # Select data normalisation algorithm
-        dataprep1 = st.selectbox("Select an action", 
-                                 ["None", "splmp", "Other?"], 
-                                 index=None, # no option is selected initially
-                                 )
-        max_val = len(df)
-        number = st.slider("Select a sample to display", 
-                           min_value=1, max_value=max_val)
-            
-        # Submit button
-        submit_button_2 = st.form_submit_button("Submit")
-        
-        
+       
     @st.cache_data
-    def first_processing(df, dataprep1, col, number):
+    def first_processing(df, dataprep1, col, sample_idx):
         """
         Feature Selection (splmp)
     
@@ -189,7 +161,7 @@ if st.session_state["step_1_ok"] == True:
             df_norm=df_data
         elif dataprep1 == "splmp":
             df_norm = ct.splmp(df_data)
-            ct.splmp_plot(df_data, df_norm, number)
+            ct.splmp_plot(df_data, df_norm, sample_idx)
         
         else:
             df_norm=df_data
@@ -199,7 +171,7 @@ if st.session_state["step_1_ok"] == True:
     
 if 'submit_button_2' in locals(): #??
     if submit_button_2:
-        df_norm1 = first_processing(df, dataprep1, col, number)   # after slpm
+        df_norm1 = first_processing(df, dataprep1, col, sample_idx)   # after slpm
         st.session_state["step_2_ok"] = True
         st.session_state["df_norm1"] = df_norm1
 
@@ -236,25 +208,23 @@ if 'submit_button_3_1' in locals():
         
 st.write(st.session_state["step_3_1_ok"])
 if st.session_state["step_3_1_ok"] == True:
-    # depending on selected dimention reduction method
-    with st.form("dim_red_param"):
-        st.write("#### UMAP parameters")
-        neigh = st.slider("Select the number of neighbors", 
-                          min_value=1, max_value=100, value=15)
-        min_dist = st.slider("Select the distance", 
-                             min_value=0.0, max_value=1.0, value=0.5)
-        st.session_state["umap_neigh"] = int(neigh)
-        st.session_state["umap_min_dist"] = float(min_dist)
-        submit_button_3_2 = st.form_submit_button("Submit")
+    # depending on selected dimention reduction method define parameters
+    if st.session_state["dimred"]=="UMAP":
+        umap_neigh, umap_min_dist, submit_button_3_2 = f.umap_params_form()
+        st.session_state["umap_neigh"] = umap_neigh
+        st.session_state["umap_min_dist"] = umap_min_dist
+    else:
+        # add here for another dim red algorithms
+        pass
 
 @st.cache_data
-def scale_dimred(df, scaler, dimred):
+def scale_dimred(df, scaler, dimred, neigh, min_dist): # make kwargs
     """
     do we need scaling here or before feature selection??
 
     """
     vals = ct.normal(df, scaler)
-    output_dimred = ct.dim_reduction(vals, dimred)
+    output_dimred = ct.dim_reduction(vals, dimred, neigh, min_dist)
     #st.session_state["step_3_2_ok"] = True
     return output_dimred
 
@@ -262,7 +232,9 @@ if 'submit_button_3_2' in locals():
     if submit_button_3_2:
         st.write(submit_button_3_2)
         st.write(st.session_state["dimred"])
-        df_dimred = scale_dimred(df_norm1, scaler, st.session_state["dimred"])
+        df_dimred = scale_dimred(df_norm1, scaler, st.session_state["dimred"],
+                                 st.session_state["umap_neigh"],
+                                 st.session_state["umap_min_dist"])
         st.session_state["df_dimred"] = df_dimred
         st.session_state["step_3_2_ok"] = True
         

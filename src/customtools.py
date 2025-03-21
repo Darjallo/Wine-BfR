@@ -182,16 +182,15 @@ def normal(df, dataprep2):
     return vals
 
 
-def apply_umap(vals):
-    neigh = st.session_state["umap_neigh"]
-    min_dist = st.session_state["umap_min_dist"]
+def apply_umap(vals, neigh, min_dist):
     reducer = umap.UMAP(n_neighbors=neigh, min_dist=min_dist,)
     embedding = reducer.fit_transform(vals)
     return embedding
 
-def dim_reduction(vals, dataprep):
+def dim_reduction(vals, dataprep, neigh, min_dist):
+    # extend list of parameters, make them kwargs
     if dataprep == 'UMAP':
-        embedding = apply_umap(vals)
+        embedding = apply_umap(vals, neigh, min_dist)
         # figure
         groups = st.session_state["groups"]
         unique_groups = list(set(groups))  # Get unique group labels
