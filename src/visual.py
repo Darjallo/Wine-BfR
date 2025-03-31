@@ -9,7 +9,8 @@ import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt 
 from matplotlib.markers import MarkerStyle
-import mplcursors
+from matplotlib.colors import to_hex
+import plotly.graph_objects as go
 
 if "groups" in st.session_state:
     groups = st.session_state["groups"]
@@ -31,15 +32,39 @@ group_colors = {group: plt.cm.tab10(i) for i, group
 
 # Map each group label to its color
 colors = [group_colors[group] for group in groups]
+plotly_colors = [to_hex(group_colors[group]) for group in groups]
 
 # Get all valid marker symbols (excluding some non-usable ones)
-all_markers = [m for m in MarkerStyle.markers.keys()
+plt_markers = [m for m in MarkerStyle.markers.keys()
                if isinstance(m, str) and len(m) == 1 and
                m not in {' ', '', '.', ','}]
 
+plotly_markers = [
+    "circle", 
+    "square", 
+    "diamond",
+    "cross", 
+    "x", 
+    "triangle-up", 
+    "triangle-down", 
+    "triangle-left",
+    "triangle-right",
+    "pentagon", 
+    "hexagon", 
+    "hexagon2", 
+    "star",
+    "hexagram",
+    "star-triangle-up", 
+    "star-square", 
+    "star-diamond", 
+    "hourglass", 
+    "bowtie", 
+]
+
+
 # Assign a unique marker to each group
 category_markers = {
-    category: all_markers[i % len(all_markers)]
+    category: plotly_markers[i % len(plotly_markers)]
     for i, category in enumerate(unique_categories)
 }
 markers = [category_markers[cat] for cat in categories]
@@ -68,39 +93,31 @@ def dim_red_visual(x, y, legend_title, fig_title):
     st.pyplot(fig)
     
 def clustering_visual(x, y, fig_title):
-    
-    fig, ax = plt.subplots()
-    # for category in unique_categories:
-    #     # Get indices of points in this category
-    #     idx = [i for i, cat in enumerate(categories) if cat == category]
-    #     ax.scatter(
-    #         [x[i] for i in idx],
-    #         [y[i] for i in idx],
-    #         c=[colors[i] for i in idx],
-    #         marker=category_markers[category],
-    #         edgecolors="none",
-    #         alpha=0.6,
-    #         label=str(category)
-    #     )
-    
-    #ax.legend(title="Category")
-    metas = ['seal']  # Metadata for each point
-    
-    for x_i, y_i, c, m in zip(x, y, colors, markers):
-        pl = ax.scatter(x_i, y_i, 
-                   c=c, 
-                   marker=m, 
-                   edgecolors="none",
-                   alpha=0.6,
-                   )
-    cursor = mplcursors.cursor(pl, hover=True)
 
-    @cursor.connect("add")
-    def on_add(sel):
-        index = sel.index  # Index of the selected point
-        sel.annotation.set_text(metas[index])  # Show label
-        
-    ax.set_title(fig_title)
-    st.pyplot(fig)
+    metas = [f"Point {i}" for i in range(len(x))]
+    #data_colors = [colors.to_hex(c) for c in colors]
+    fig = go.Figure()
+    for x_i, y_i, meta, color, marker in zip(x, y, metas, plotly_colors, markers):
+        fig.add_trace(go.Scatter(
+            x=[x_i],
+            y=[y_i],
+            mode='markers',
+            marker=dict(
+                color=color,
+                symbol=marker,
+                size=10
+            ),
+            name=meta,
+            hovertext=meta,
+            hoverinfo='text'
+        ))
+    fig.update_layout(
+    title=fig_title,
+    xaxis_title="",
+    yaxis_title="",
+    showlegend=False
+)
+    st.plotly_chart(fig)
+    
 
 
