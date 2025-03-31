@@ -3,7 +3,7 @@
 """
 Created on Wed Sep 25 16:50:31 2024
 
-@author: daria
+@author: Daria Savvateeva
 """
 
 from math import log
@@ -21,6 +21,9 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib import colors
+
+from . import visual as v
+
 
 def file_format_verification(uploaded_file):
     # st.error("Unsupported file format.")
@@ -192,31 +195,8 @@ def dim_reduction(vals, dataprep, neigh, min_dist):
     if dataprep == 'UMAP':
         embedding = apply_umap(vals, neigh, min_dist)
         # figure
-        groups = st.session_state["groups"]
-        unique_groups = list(set(groups))  # Get unique group labels
-        group_colors = {group: plt.cm.tab10(i) for i, group 
-                        in enumerate(unique_groups)}  # Assign colors
-
-        # Map each group label to its color
-        colors = [group_colors[group] for group in groups]
-
-        fig, ax = plt.subplots()
-        ax.scatter(
-            embedding[:, 0],
-            embedding[:, 1],
-            c=colors,
-            edgecolors="none",
-            alpha=0.6
-           
-        )
-        handles = [plt.Line2D([0], [0], marker='o', color='w', 
-                              markerfacecolor=group_colors[group], alpha=0.6, 
-                              markersize=10) 
-           for group in unique_groups]
-        ax.legend(handles, unique_groups, title="Groups")
-        ax.set_title('UMAP')
-   
-        st.pyplot(fig)
+        v.dim_red_visual(embedding[:, 0], embedding[:, 1], 'Labels', 'UMAP')
+        
         return embedding
 
 def group_naming(groups):
@@ -231,78 +211,80 @@ def group_naming(groups):
 
 def clustering(vals, dataprep, groups):
     if dataprep == 'HDBSCAN':
-        min_cluster_size = st.slider("Select the minimum cluster size", \
-                                     min_value=1, max_value=10)
-        cluster_selection_epsilon = st.slider("Select cluster selection epsilon", \
-                                     min_value=0.0, max_value=1.0, value=0.0)
+        m_c_s = st.session_state["min_cluster_size"]
+        eps = st.session_state["cluster_selection_epsilon"]
 
-        hdb = HDBSCAN(cluster_selection_epsilon = 0.0375, min_cluster_size = 3).fit(vals) 
+        hdb = HDBSCAN(cluster_selection_epsilon = eps, min_cluster_size = m_c_s).fit(vals) 
         labels = hdb.labels_ 
+        st.session_state["class_categories"] = labels
         probabilities = hdb.probabilities_
+        st.session_state["class_proba"] = probabilities
         
-        unique_labels = np.unique(labels)
+        v.clustering_visual(vals[:,0], vals[:,1], "HDBSCAN")
         
-        g_names = group_naming(groups)  # ids w/o digits
-       
+        # unique_labels = np.unique(labels)
         
-        
-        # Generate a colormap for arbitrary group count
-        colormap1 = cm.get_cmap('Pastel1', len(set(g_names)))
-        group_colors_original = {group: colormap1(i) for i, group in enumerate(set(g_names))}  # Map each group to a color
-        group_colors_original = {group: colors.to_hex(color) for group, color in group_colors_original.items()}       
-        colors_original = [group_colors_original[group] for group in g_names]  # Map groups to colors original
-        
-        colormap2 = cm.get_cmap('tab20', len(unique_labels)) 
-        group_colors_model = {group: colormap2(i) for i, group in enumerate(unique_labels)} 
-        group_colors_model = {group: colors.to_hex(color) for group, color in group_colors_model.items()}      
-        colors_model = [group_colors_model[group] for group in labels]  # 
+        # g_names = group_naming(groups)  # ids w/o digits
 
-        # Create scatter plots for each group
-        traces = []
-        for group_name, color in group_colors_model.items():
-            group_mask = [g == group_name for g in labels]
-            traces.append(
-                go.Scatter(
-                    x=vals[group_mask, 0],
-                    y=vals[group_mask, 1],
-                    mode='markers',
-                    marker=dict(symbol='circle', size=14, color=color),
-                    name="",  # Legend entry
-                    #legendgroup=str(group_name),  # Group items in the legend
-                    showlegend=True,  # Show legend for this trace
-                    text="",  # Text to display on hover
-                    hovertemplate=''  # Display only custom text
-                )
-            )
-        print(len(groups))
-        print(groups[1])
-        for group_name, color in group_colors_original.items():
-            group_mask = [g == group_name for g in g_names]
-            for i, is_in_group in enumerate(group_mask):
-                if is_in_group:  # Check if the point belongs to the current group
-                    legend_sample = groups[i]  # Get the corresponding sample name
-                    traces.append(
-                        go.Scatter(
-                            x=[vals[i, 0]],  # Single x-coordinate for the point
-                            y=[vals[i, 1]],  # Single y-coordinate for the point
-                            mode='markers',
-                            marker=dict(symbol='cross', size=8, color=color),
-                            name=legend_sample,  # Unique legend entry for this point
-                            showlegend=False,  # Show legend for each point
-                            text=[legend_sample],  # Text to display on hover
-                            hovertemplate='%{text}'  # Display only custom text
-                        )
-                    )
-
-        fig = go.Figure(data=traces)
-        fig.update_layout(
-            #xaxis_title='X-axis',
-            #yaxis_title='Y-axis',
-            yaxis=dict(showgrid=False)
-        )
+    
         
-        # Display the plot in Streamlit
-        st.plotly_chart(fig)
+        # # Generate a colormap for arbitrary group count
+        # colormap1 = cm.get_cmap('Pastel1', len(set(g_names)))
+        # group_colors_original = {group: colormap1(i) for i, group in enumerate(set(g_names))}  # Map each group to a color
+        # group_colors_original = {group: colors.to_hex(color) for group, color in group_colors_original.items()}       
+        # colors_original = [group_colors_original[group] for group in g_names]  # Map groups to colors original
+        
+        # colormap2 = cm.get_cmap('tab20', len(unique_labels)) 
+        # group_colors_model = {group: colormap2(i) for i, group in enumerate(unique_labels)} 
+        # group_colors_model = {group: colors.to_hex(color) for group, color in group_colors_model.items()}      
+        # colors_model = [group_colors_model[group] for group in labels]  # 
+
+        # # Create scatter plots for each group
+        # traces = []
+        # for group_name, color in group_colors_model.items():
+        #     group_mask = [g == group_name for g in labels]
+        #     traces.append(
+        #         go.Scatter(
+        #             x=vals[group_mask, 0],
+        #             y=vals[group_mask, 1],
+        #             mode='markers',
+        #             marker=dict(symbol='circle', size=14, color=color),
+        #             name="",  # Legend entry
+        #             #legendgroup=str(group_name),  # Group items in the legend
+        #             showlegend=True,  # Show legend for this trace
+        #             text="",  # Text to display on hover
+        #             hovertemplate=''  # Display only custom text
+        #         )
+        #     )
+        # print(len(groups))
+        # print(groups[1])
+        # for group_name, color in group_colors_original.items():
+        #     group_mask = [g == group_name for g in g_names]
+        #     for i, is_in_group in enumerate(group_mask):
+        #         if is_in_group:  # Check if the point belongs to the current group
+        #             legend_sample = groups[i]  # Get the corresponding sample name
+        #             traces.append(
+        #                 go.Scatter(
+        #                     x=[vals[i, 0]],  # Single x-coordinate for the point
+        #                     y=[vals[i, 1]],  # Single y-coordinate for the point
+        #                     mode='markers',
+        #                     marker=dict(symbol='cross', size=8, color=color),
+        #                     name=legend_sample,  # Unique legend entry for this point
+        #                     showlegend=False,  # Show legend for each point
+        #                     text=[legend_sample],  # Text to display on hover
+        #                     hovertemplate='%{text}'  # Display only custom text
+        #                 )
+        #             )
+
+        # fig = go.Figure(data=traces)
+        # fig.update_layout(
+        #     #xaxis_title='X-axis',
+        #     #yaxis_title='Y-axis',
+        #     yaxis=dict(showgrid=False)
+        # )
+        
+        # # Display the plot in Streamlit
+        # st.plotly_chart(fig)
        
 
 

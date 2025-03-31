@@ -2,7 +2,7 @@
 """
 Created on Thu Mar 20 17:15:54 2025
 
-@author: daria
+@author: Daria Savvateeva
 """
 
 import streamlit as st
@@ -59,10 +59,25 @@ def umap_params_form():
     with st.form("umap_params"):
         st.write("#### UMAP parameters")
         neigh = st.slider("Select the number of neighbors", 
-                          min_value=1, max_value=100, value=15)
+                          min_value=1, max_value=10, value=5)
         min_dist = st.slider("Select the distance", 
                              min_value=0.0, max_value=1.0, value=0.5)
         st.session_state["umap_neigh"] = int(neigh)
         st.session_state["umap_min_dist"] = float(min_dist)
         submit_button = st.form_submit_button("Submit")
     return neigh, min_dist, submit_button
+
+
+# 5? HDBSCAN parameters
+def hdbscan_params_form():
+    with st.form("hdbscan_params"):
+        st.write("#### HDBSCAN parameters")
+        min_cluster_size = st.slider("Select the minimum cluster size", \
+                                     min_value=2, max_value=20)
+        cluster_selection_epsilon = st.slider("Select cluster selection epsilon", \
+                                     min_value=0.0, max_value=1.0, value=0.0)
+
+        st.session_state["min_cluster_size"] = int(min_cluster_size)
+        st.session_state["cluster_selection_epsilon"] = float(cluster_selection_epsilon)
+        submit_button = st.form_submit_button("Submit")
+    return min_cluster_size, cluster_selection_epsilon, submit_button

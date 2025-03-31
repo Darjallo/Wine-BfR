@@ -3,7 +3,7 @@
 """
 Created on Wed Sep 25 16:01:27 2024
 
-@author: daria
+@author: Daria Savvateeva
 
 """
 #______________________________________________________________________________
@@ -33,19 +33,23 @@ import src.forms as f
 # Initialize session state variables
 for key, default_value in {"sep": ",", 
                            "df": None, # original data from file
-                           "groups": None, # column with data on entry labels
+                           "groups": [], # column with data on entry labels
                            "col": None,  # name of the column that contains info about labels
                            "processed_treshold": None, 
                            "processed_splmp": None,
                            "step_1_ok": False,
                            "step_2_ok": False,
-                           "step_3_1_ok": False, # algorithm selection
+                           "step_3_1_ok": False, # algorithm selection (dim red)
                            "step_3_2_ok": False, # parameter selection
                            "df_norm1": pd.DataFrame(),
                            "df_dimred": pd.DataFrame(),
                            "dimred": None, # dimention reduction algorithm selected
                            "umap_neigh": 15,
                            "umap_min_dist": 0.5,
+                           "step_4_1_ok": False, # clustering alg selection
+                           "step_4_2_ok": False, # params for clustering
+                           "min_cluster_size": 5,
+                           "cluster_selection_epsilon":0.5,
                            }.items():
     if key not in st.session_state:
         st.session_state[key] = default_value
@@ -247,13 +251,32 @@ if st.session_state["step_3_2_ok"] == True:
         cluster = st.selectbox("Select clustering algorithm", 
                                  ["None", "HDBSCAN", "Other?"], index=None)
         st.session_state["cluster_alg"] = cluster
-        submit_button_4 = st.form_submit_button("Submit")
+        submit_button_4_1 = st.form_submit_button("Submit")
+        
+if 'submit_button_4_1' in locals():
+    if submit_button_4_1:
+        # clustering algorithm was selected
+        st.session_state["step_4_1_ok"] = True 
 
-if 'submit_button_4' in locals():
-    if submit_button_4:
-        ct.clustering(df_dimred, st.session_state["cluster_alg"], 
-                      st.session_state['groups'])
-        st.session_state["step_4_ok"] = True
+if st.session_state["step_4_1_ok"] == True:
+    # depending on selected clustering method define parameters
+    if st.session_state["cluster_alg"]=="HDBSCAN":
+        min_cluster_size, cluster_selection_epsilon, submit_button_4_2 = f.hdbscan_params_form()
+        #st.session_state["umap_neigh"] = umap_neigh
+        #st.session_state["umap_min_dist"] = umap_min_dist
+        # dublication, check also for umap
+    else:
+        # add here for another clustering algorithms
+        pass
+
+if 'submit_button_4_2' in locals():
+    if submit_button_4_2:
+        st.session_state["step_4_2_ok"] = True 
+
+if st.session_state["step_4_2_ok"] == True:
+    ct.clustering(df_dimred, st.session_state["cluster_alg"], 
+                  st.session_state['groups'])
+    #st.session_state["step_4_2_ok"] = True
         
 #@st.cache_data
 #def do_clustering():  #(df_dimred, st.session_state["cluster_alg"], groups):
