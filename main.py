@@ -131,6 +131,7 @@ if submit_button_1:
     df, groups, col = file_upload(data_type, uploaded_file, selected_data_type)
     st.session_state['df'] = df
     st.session_state['groups'] = groups
+    st.write(st.session_state['groups'])
     st.session_state['col'] = col
     
     

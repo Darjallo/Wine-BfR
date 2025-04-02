@@ -3,4 +3,3 @@ plotly
 streamlit
 scikit-learn
 umap-learn
-mplcursors

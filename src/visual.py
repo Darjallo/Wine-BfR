@@ -12,62 +12,67 @@ from matplotlib.markers import MarkerStyle
 from matplotlib.colors import to_hex
 import plotly.graph_objects as go
 
-if "groups" in st.session_state:
-    groups = st.session_state["groups"]
-else:
-    groups = []
-if "class_categories" in st.session_state:  
-    categories = st.session_state["class_categories"]
-    unique_categories = np.unique(categories)
-else:
-    categories = []
-    unique_categories = []
+def vis_params():
+    """
+    define all necessary params for figures
+    """
+    if "groups" in st.session_state:
+        groups = st.session_state["groups"]
+    else:
+        groups = []
+    if "class_categories" in st.session_state:  
+        categories = st.session_state["class_categories"]
+        unique_categories = np.unique(categories)
+    else:
+        categories = []
+        unique_categories = []
  
-# GROUP is a known labes of the sample
-# CATEGORY is a class defined by a classification algorithm
-
-unique_groups = list(set(groups))  # Get unique group labels
-group_colors = {group: plt.cm.tab10(i) for i, group 
-                in enumerate(unique_groups)}  # Assign colors
-
-# Map each group label to its color
-colors = [group_colors[group] for group in groups]
-plotly_colors = [to_hex(group_colors[group]) for group in groups]
-
-# Get all valid marker symbols (excluding some non-usable ones)
-plt_markers = [m for m in MarkerStyle.markers.keys()
-               if isinstance(m, str) and len(m) == 1 and
-               m not in {' ', '', '.', ','}]
-
-plotly_markers = [
-    "circle", 
-    "square", 
-    "diamond",
-    "cross", 
-    "x", 
-    "triangle-up", 
-    "triangle-down", 
-    "triangle-left",
-    "triangle-right",
-    "pentagon", 
-    "hexagon", 
-    "hexagon2", 
-    "star",
-    "hexagram",
-    "star-triangle-up", 
-    "star-square", 
-    "star-diamond", 
-    "hourglass", 
-    "bowtie", 
-]
-
-
-# Assign a unique marker to each group
-category_markers = {
-    category: plotly_markers[i % len(plotly_markers)]
-    for i, category in enumerate(unique_categories)
-}
-markers = [category_markers[cat] for cat in categories]
+    # GROUP is a known labes of the sample
+    # CATEGORY is a class defined by a classification algorithm
+    
+    unique_groups = list(set(groups))  # Get unique group labels
+    group_colors = {group: plt.cm.tab10(i) for i, group 
+                    in enumerate(unique_groups)}  # Assign colors
+    
+    # Map each group label to its color
+    colors = [group_colors[group] for group in groups]
+    plotly_colors = [to_hex(group_colors[group]) for group in groups]
+    
+    # Get all valid marker symbols (excluding some non-usable ones)
+    plt_markers = [m for m in MarkerStyle.markers.keys()
+                   if isinstance(m, str) and len(m) == 1 and
+                   m not in {' ', '', '.', ','}]
+    
+    plotly_markers = [
+        "circle", 
+        "square", 
+        "diamond",
+        "cross", 
+        "x", 
+        "triangle-up", 
+        "triangle-down", 
+        "triangle-left",
+        "triangle-right",
+        "pentagon", 
+        "hexagon", 
+        "hexagon2", 
+        "star",
+        "hexagram",
+        "star-triangle-up", 
+        "star-square", 
+        "star-diamond", 
+        "hourglass", 
+        "bowtie", 
+    ]
+    
+    
+    # Assign a unique marker to each group
+    category_markers = {
+        category: plotly_markers[i % len(plotly_markers)]
+        for i, category in enumerate(unique_categories)
+    }
+    markers = [category_markers[cat] for cat in categories]
+    return colors, plotly_colors, unique_groups, group_colors, markers
 
 
 def dim_red_visual(x, y, legend_title, fig_title):
@@ -76,6 +81,8 @@ def dim_red_visual(x, y, legend_title, fig_title):
     title is dimention reduction algorithm
     legends are known labels
     """
+    colors, plotly_colors, unique_groups, group_colors, markers = vis_params()
+
     fig, ax = plt.subplots()
     ax.scatter(
         x, y,
@@ -93,6 +100,7 @@ def dim_red_visual(x, y, legend_title, fig_title):
     st.pyplot(fig)
     
 def clustering_visual(x, y, fig_title):
+    colors, plotly_colors, unique_groups, group_colors, markers = vis_params()
 
     metas = [f"Point {i}" for i in range(len(x))]
     #data_colors = [colors.to_hex(c) for c in colors]
