@@ -242,10 +242,8 @@ if 'submit_button_3_2' in locals():
     if submit_button_3_2:
         st.write(submit_button_3_2)
         st.write(st.session_state["dimred"])
-        scaled_dimred = scale_dimred(df_norm1, scaler, st.session_state["dimred"],
-                                 st.session_state["umap_neigh"],
-                                 st.session_state["umap_min_dist"])
-        df_dimred = plot_dimred(scaled_dimred, dimred, 
+        scaled_dimred = scale_dimred(df_norm1, scaler,)
+        df_dimred = plot_dimred(scaled_dimred, st.session_state["dimred"],
                                 st.session_state["umap_neigh"],
                                 st.session_state["umap_min_dist"])
         st.session_state["df_dimred"] = df_dimred
