@@ -47,7 +47,7 @@ def data_norm_form(max_val):
                                  )
        # max_val = len(df)
         sample_idx = st.slider("Select a sample to display", 
-                           min_value=1, max_value=max_val)
+                           min_value=0, max_value=max_val-1)
             
         # Submit button
         submit_button = st.form_submit_button("Submit")

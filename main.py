@@ -222,23 +222,32 @@ if st.session_state["step_3_1_ok"] == True:
         pass
 
 @st.cache_data
-def scale_dimred(df, scaler, dimred, neigh, min_dist): # make kwargs
+def scale_dimred(df, scaler): # make kwargs
     """
     do we need scaling here or before feature selection??
 
     """
     vals = ct.normal(df, scaler)
-    output_dimred = ct.dim_reduction(vals, dimred, neigh, min_dist)
+    #output_dimred = ct.dim_reduction(vals, dimred, neigh, min_dist)
     #st.session_state["step_3_2_ok"] = True
+    return vals # scaled (or not scaled) data before dimred
+
+@st.cache_data
+def plot_dimred(vals, dimred, neigh, min_dist):
+    output_dimred = ct.dim_reduction(vals, dimred, neigh, min_dist)
     return output_dimred
+    
 
 if 'submit_button_3_2' in locals():
     if submit_button_3_2:
         st.write(submit_button_3_2)
         st.write(st.session_state["dimred"])
-        df_dimred = scale_dimred(df_norm1, scaler, st.session_state["dimred"],
+        scaled_dimred = scale_dimred(df_norm1, scaler, st.session_state["dimred"],
                                  st.session_state["umap_neigh"],
                                  st.session_state["umap_min_dist"])
+        df_dimred = plot_dimred(scaled_dimred, dimred, 
+                                st.session_state["umap_neigh"],
+                                st.session_state["umap_min_dist"])
         st.session_state["df_dimred"] = df_dimred
         st.session_state["step_3_2_ok"] = True
         
