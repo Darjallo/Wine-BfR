@@ -140,7 +140,47 @@ def clustering_visual(x, y, fig_title):
     )
     fig.update_xaxes(scaleanchor="y", showgrid=False, zeroline=False, showticklabels=False)  # Hide x-axis gridlines, zero line, and ticks
     fig.update_yaxes(scaleanchor="x", showgrid=False, zeroline=False, showticklabels=False)  # Hide y-axis gridlines, zero line, and ticks
+    
+    #__________________________________________________________________________
+    # Adding alternative "legend-like" annotations with symbols
+    
+    anns = [{'y':1-0.5*i, 'text':'class '+str(i+1),} for i, m in enumerate(set(markers))]
+    for ann in anns:
+        fig.add_annotation(
+            x=0,
+            y=ann['y'],
+            text=ann['text'],
+            showarrow=False,
+            font=dict(size=24, color="black"),
+            align='left'
+        )
+    # fig.add_annotation(
+    #     x=0.8, y=0.9,  # Position of the annotation (relative to the figure)
+    #     text="Red: Circle\nBlue: Square\nGreen: Diamond\nOrange: Cross",  # Text to simulate a legend
+    #     showarrow=False,
+    #     font=dict(size=12, color="black"),
+    #     align="left",
+    #     borderpad=5,
+    #     bgcolor="rgba(255, 255, 255, 0.6)",  # Background color of the annotation box
+    #     bordercolor="black",  # Border color for the box
+    #     borderwidth=2  # Border width for the annotation box
+    # )
 
+    # Adding symbols (e.g., circles, squares, diamonds, crosses) next to the annotation text
+    symbol_annotations = [{"symbol": m, "x": -1, "y": 1-0.5*i, "color": "blue"} for i, m in enumerate(set(markers))]
+
+    for annotation in symbol_annotations:
+        fig.add_trace(go.Scatter(
+            x=[annotation['x']], 
+            y=[annotation['y']],
+            mode='markers',
+            marker=dict(
+                color=annotation['color'],
+                symbol=annotation['symbol'],
+                size=24
+            ),
+            showlegend=False  # Hide from the main legend
+        ))
 
     st.plotly_chart(fig)
     
