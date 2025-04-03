@@ -113,7 +113,8 @@ def clustering_visual(x, y, fig_title):
             marker=dict(
                 color=color,
                 symbol=marker,
-                size=10
+                size=20,
+                opacity=0.6,
             ),
             name=meta,
             hovertext=meta,
@@ -121,10 +122,26 @@ def clustering_visual(x, y, fig_title):
         ))
     fig.update_layout(
     title=fig_title,
+    title_x=0.5,  # Center the title
     xaxis_title="",
     yaxis_title="",
-    showlegend=False
-)
+    showlegend=False,
+    autosize=True,  # Let Plotly auto size the plot
+    width=900,  # You can adjust the size as needed
+    height=900,  # Same width and height for a square shape
+    plot_bgcolor="white",  # Background color of the plot area
+    paper_bgcolor="white",  # Background color of the paper
+    shapes=[dict(
+        type="rect",  # Shape type is rectangle
+        x0=0, x1=1, y0=0, y1=1,  # Coordinates for the full frame
+        xref="paper", yref="paper",  # Reference to the entire figure
+        line=dict(color="blue", width=2)  # Frame color and width
+    )],
+    )
+    fig.update_xaxes(scaleanchor="y", showgrid=False, zeroline=False, showticklabels=False)  # Hide x-axis gridlines, zero line, and ticks
+    fig.update_yaxes(scaleanchor="x", showgrid=False, zeroline=False, showticklabels=False)  # Hide y-axis gridlines, zero line, and ticks
+
+
     st.plotly_chart(fig)
     
 

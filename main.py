@@ -6,6 +6,10 @@ Created on Wed Sep 25 16:01:27 2024
 @author: Daria Savvateeva
 
 """
+
+import streamlit as st
+st.set_page_config(layout="wide")
+
 #______________________________________________________________________________
 """
 Pipeline:
@@ -22,7 +26,7 @@ Pipeline:
 """
 #______________________________________________________________________________
 
-import streamlit as st
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -56,19 +60,23 @@ for key, default_value in {"sep": ",",
 
 
 # Title of the app
-st.title("App for KIDA conference")
+st.title("App for spectra classification")
 #______________________________________________________________________________
 # Step 1: File Upload
 st.info('Some details on how the file with the data should look like')
 
 #______________________________________________________________________________
-# 📌 Step 1: Data upload
-
-# data type German or American
-# with or without labels 
-# file formats csv, txt, xlsx
-
-data_type, uploaded_file, selected_data_type, submit_button_1 = f.data_upload_form()
+# Create two columns for the layout
+st.divider()
+col_upl_1, col_upl_2 = st.columns(2)
+with col_upl_1:
+    # 📌 Step 1: Data upload
+    
+    # data type German or American
+    # with or without labels 
+    # file formats csv, txt, xlsx
+    
+    data_type, uploaded_file, selected_data_type, submit_button_1 = f.data_upload_form()
 
 #______________________________________________________________________________
 
@@ -126,18 +134,15 @@ def file_upload(data_type, uploaded_file, selected_data_type):
     # groups is a column with labels
     return df, groups, col
 
-
-if submit_button_1:
-    df, groups, col = file_upload(data_type, uploaded_file, selected_data_type)
-    st.session_state['df'] = df
-    st.session_state['groups'] = groups
-    st.write(st.session_state['groups'])
-    st.session_state['col'] = col
-    
-    
-    
-    if df is not None:
-        st.session_state["step_1_ok"] = True
+with col_upl_2:
+    if submit_button_1:
+        df, groups, col = file_upload(data_type, uploaded_file, selected_data_type)
+        st.session_state['df'] = df
+        st.session_state['groups'] = groups
+        st.session_state['col'] = col
+              
+        if df is not None:
+            st.session_state["step_1_ok"] = True
 
 # st.write('df' in locals())
 # df disappears after the second button is pressed
@@ -147,80 +152,102 @@ col = st.session_state['col']
 
 #______________________________________________________________________________
 # 📌 Step 2: First dataprocessing step (splmp, for example)
-st.write(st.session_state["step_1_ok"])
-if st.session_state["step_1_ok"] == True:
-    dataprep1, sample_idx, submit_button_2 = f.data_norm_form(len(df))
+@st.cache_data
+def first_processing(df, dataprep1, col, sample_idx):
+    """
+    Feature Selection (splmp)
+
+    """
+    #remove column "group" if present
+    df_data = ct.treshold(df, col) 
+    
+    if dataprep1 == "Other?":
+        #ct.display_other_plot()
+        df_norm=df_data
+    elif dataprep1 == "splmp":
+        df_norm = ct.splmp(df_data)
+        #ct.splmp_plot(df_data, df_norm, sample_idx)
+    
+    else:
+        df_norm=df_data
+        #st.warning("⚠ Are you sure you want no processing at this step?")
+
+    return df_data, df_norm
+
+@st.cache_data
+def first_processing_vis(df_data, df_norm, dataprep1, sample_idx):
+    if dataprep1 == "Other?":
+        ct.display_other_plot()
+    elif dataprep1 == "splmp":
+        ct.splmp_plot(df_data, df_norm, sample_idx)   
+    else:
+
+        st.warning("⚠ Are you sure you want no processing at this step?")
+    pass
+
+st.divider()
+col_norm_1, col_norm_2 = st.columns(2)
+
+with col_norm_1:
+    if st.session_state["step_1_ok"] == True:
+        dataprep1, sample_idx, submit_button_2 = f.data_norm_form(len(df))
     
        
-    @st.cache_data
-    def first_processing(df, dataprep1, col, sample_idx):
-        """
-        Feature Selection (splmp)
     
-        """
-        #remove column "group" if present
-        df_data = ct.treshold(df, col) 
-        
-        if dataprep1 == "Other?":
-            ct.display_other_plot()
-            df_norm=df_data
-        elif dataprep1 == "splmp":
-            df_norm = ct.splmp(df_data)
-            ct.splmp_plot(df_data, df_norm, sample_idx)
-        
-        else:
-            df_norm=df_data
-            st.warning("⚠ Are you sure you want no processing at this step?")
-
-        return df_norm
+with col_norm_2:    
+    if 'submit_button_2' in locals(): #??
+        if submit_button_2:
+            df_tresh, df_norm1 = first_processing(df, dataprep1, col, sample_idx)   # after slpm
+            first_processing_vis(df_tresh, df_norm1, dataprep1, sample_idx)
+            st.session_state["step_2_ok"] = True
+            st.session_state["df_norm1"] = df_norm1
     
-if 'submit_button_2' in locals(): #??
-    if submit_button_2:
-        df_norm1 = first_processing(df, dataprep1, col, sample_idx)   # after slpm
-        st.session_state["step_2_ok"] = True
-        st.session_state["df_norm1"] = df_norm1
-
-df_norm1 = st.session_state["df_norm1"]
-if len(df_norm1)>0:
-    st.write(df_norm1.head())
+    df_norm1 = st.session_state["df_norm1"]
+    if len(df_norm1)>0:
+        st.write(df_norm1.head())
 
 #______________________________________________________________________________
 # 📌 Step 3: Standard Scaler and dimention reduction
+st.divider()
+col_dimred_1, col_dimred_2 = st.columns(2)
 st.write(st.session_state["step_2_ok"])
-if st.session_state["step_2_ok"] == True:
-    
-    with st.form("dimention_reduction"):
-        st.write("### Standard Scaler ?")
-        scaler = st.selectbox("Select normalization", 
-                              ["None", "StandardScaler", "Other?"], 
-                              index=None)
+
+with col_dimred_1:
+    if st.session_state["step_2_ok"] == True:
         
-        st.write("### Dimention reduction")
-    
-        # Select dim red algorithm
-        dimred = st.selectbox("Select dimention reduction method", 
-                                 ["None", "UMAP", "Other?"], 
-                                 index=None, # no option is selected initially
-                                 )
-        st.session_state["dimred"] = dimred
+        with st.form("dimention_reduction"):
+            st.write("### Standard Scaler ?")
+            scaler = st.selectbox("Select normalization", 
+                                  ["None", "StandardScaler", "Other?"], 
+                                  index=None)
             
-        # Submit button
-        submit_button_3_1 = st.form_submit_button("Submit")
+            st.write("### Dimention reduction")
         
+            # Select dim red algorithm
+            dimred = st.selectbox("Select dimention reduction method", 
+                                     ["None", "UMAP", "Other?"], 
+                                     index=None, # no option is selected initially
+                                     )
+            st.session_state["dimred"] = dimred
+                
+            # Submit button
+            submit_button_3_1 = st.form_submit_button("Submit")
+            
 if 'submit_button_3_1' in locals():
     if submit_button_3_1:
         st.session_state["step_3_1_ok"] = True
-        
-st.write(st.session_state["step_3_1_ok"])
-if st.session_state["step_3_1_ok"] == True:
-    # depending on selected dimention reduction method define parameters
-    if st.session_state["dimred"]=="UMAP":
-        umap_neigh, umap_min_dist, submit_button_3_2 = f.umap_params_form()
-        st.session_state["umap_neigh"] = umap_neigh
-        st.session_state["umap_min_dist"] = umap_min_dist
-    else:
-        # add here for another dim red algorithms
-        pass
+  
+with col_dimred_1:
+    st.write(st.session_state["step_3_1_ok"])
+    if st.session_state["step_3_1_ok"] == True:
+        # depending on selected dimention reduction method define parameters
+        if st.session_state["dimred"]=="UMAP":
+            umap_neigh, umap_min_dist, submit_button_3_2 = f.umap_params_form()
+            st.session_state["umap_neigh"] = umap_neigh
+            st.session_state["umap_min_dist"] = umap_min_dist
+        else:
+            # add here for another dim red algorithms
+            pass
 
 @st.cache_data
 def scale_dimred(df, scaler): # make kwargs
@@ -238,53 +265,57 @@ def plot_dimred(vals, dimred, neigh, min_dist):
     output_dimred = ct.dim_reduction(vals, dimred, neigh, min_dist)
     return output_dimred
     
-
-if 'submit_button_3_2' in locals():
-    if submit_button_3_2:
-        st.write(submit_button_3_2)
-        st.write(st.session_state["dimred"])
-        scaled_dimred = scale_dimred(df_norm1, scaler,)
-        df_dimred = plot_dimred(scaled_dimred, st.session_state["dimred"],
-                                st.session_state["umap_neigh"],
-                                st.session_state["umap_min_dist"])
-        st.session_state["df_dimred"] = df_dimred
-        st.session_state["step_3_2_ok"] = True
+with col_dimred_2:
+    if 'submit_button_3_2' in locals():
+        if submit_button_3_2:
+            st.write(submit_button_3_2)
+            st.write(st.session_state["dimred"])
+            scaled_dimred = scale_dimred(df_norm1, scaler,)
+            df_dimred = plot_dimred(scaled_dimred, st.session_state["dimred"],
+                                    st.session_state["umap_neigh"],
+                                    st.session_state["umap_min_dist"])
+            st.session_state["df_dimred"] = df_dimred
+            st.session_state["step_3_2_ok"] = True
         
 df_dimred = st.session_state["df_dimred"]
 
-if st.session_state["step_3_2_ok"] == True:
-    # Select clustering algorithm
-    with st.form("clustering"):
-        st.write("### Clustering method")
-        cluster = st.selectbox("Select clustering algorithm", 
-                                 ["None", "HDBSCAN", "Other?"], index=None)
-        st.session_state["cluster_alg"] = cluster
-        submit_button_4_1 = st.form_submit_button("Submit")
-        
-if 'submit_button_4_1' in locals():
-    if submit_button_4_1:
-        # clustering algorithm was selected
-        st.session_state["step_4_1_ok"] = True 
-
-if st.session_state["step_4_1_ok"] == True:
-    # depending on selected clustering method define parameters
-    if st.session_state["cluster_alg"]=="HDBSCAN":
-        min_cluster_size, cluster_selection_epsilon, submit_button_4_2 = f.hdbscan_params_form()
-        #st.session_state["umap_neigh"] = umap_neigh
-        #st.session_state["umap_min_dist"] = umap_min_dist
-        # dublication, check also for umap
-    else:
-        # add here for another clustering algorithms
-        pass
+st.divider()
+col_clust_1, col_clust_2 = st.columns(2)
+with col_clust_1:
+    if st.session_state["step_3_2_ok"] == True:
+        # Select clustering algorithm
+        with st.form("clustering"):
+            st.write("### Clustering method")
+            cluster = st.selectbox("Select clustering algorithm", 
+                                     ["None", "HDBSCAN", "Other?"], index=None)
+            st.session_state["cluster_alg"] = cluster
+            submit_button_4_1 = st.form_submit_button("Submit")
+            
+    if 'submit_button_4_1' in locals():
+        if submit_button_4_1:
+            # clustering algorithm was selected
+            st.session_state["step_4_1_ok"] = True 
+    
+    if st.session_state["step_4_1_ok"] == True:
+        # depending on selected clustering method define parameters
+        if st.session_state["cluster_alg"]=="HDBSCAN":
+            min_cluster_size, cluster_selection_epsilon, submit_button_4_2 = f.hdbscan_params_form()
+            #st.session_state["umap_neigh"] = umap_neigh
+            #st.session_state["umap_min_dist"] = umap_min_dist
+            # dublication, check also for umap
+        else:
+            # add here for another clustering algorithms
+            pass
 
 if 'submit_button_4_2' in locals():
     if submit_button_4_2:
         st.session_state["step_4_2_ok"] = True 
-
-if st.session_state["step_4_2_ok"] == True:
-    ct.clustering(df_dimred, st.session_state["cluster_alg"], 
-                  st.session_state['groups'])
-    #st.session_state["step_4_2_ok"] = True
+        
+with col_clust_2:
+    if st.session_state["step_4_2_ok"] == True:
+        ct.clustering(df_dimred, st.session_state["cluster_alg"], 
+                      st.session_state['groups'])
+        #st.session_state["step_4_2_ok"] = True
         
 #@st.cache_data
 #def do_clustering():  #(df_dimred, st.session_state["cluster_alg"], groups):
