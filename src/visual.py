@@ -120,9 +120,22 @@ def clustering_visual(x, y, fig_title):
             hovertext=meta,
             hoverinfo='text'
         ))
+      
+    #__________________________________________________________________________
+    # Adding alternative "legend-like" annotations with symbols
+    
+
+    # find min and max for x and y to define relative coordinates
+    x_min, x_max, y_min, y_max = min(x), max(x), min(y), max(y)
+    x_rel = x_min - 0.4 * (x_max-x_min)
+    x_delta = 0.1*(x_max-x_min)
+    y_rel = y_min + 1 * (y_max-y_min)
+    y_delta = 0.1*(y_max-y_min)
+    
+    
     fig.update_layout(
-    title=fig_title,
-    title_x=0.5,  # Center the title
+    #title=fig_title,
+    #title_x=0.5,  # Center the title
     xaxis_title="",
     yaxis_title="",
     showlegend=False,
@@ -133,46 +146,34 @@ def clustering_visual(x, y, fig_title):
     paper_bgcolor="white",  # Background color of the paper
     shapes=[dict(
         type="rect",  # Shape type is rectangle
-        x0=0, x1=1, y0=0, y1=1,  # Coordinates for the full frame
-        xref="paper", yref="paper",  # Reference to the entire figure
+        x0=x_min-x_delta, x1=1.1*x_max, y0=y_min-y_delta, y1=1.1*y_max,  # Coordinates for the full frame
         line=dict(color="blue", width=2)  # Frame color and width
     )],
     )
     fig.update_xaxes(scaleanchor="y", showgrid=False, zeroline=False, showticklabels=False)  # Hide x-axis gridlines, zero line, and ticks
     fig.update_yaxes(scaleanchor="x", showgrid=False, zeroline=False, showticklabels=False)  # Hide y-axis gridlines, zero line, and ticks
     
-    #__________________________________________________________________________
-    # Adding alternative "legend-like" annotations with symbols
+   
     
-    anns = [{'y':1-0.5*i, 'text':'class '+str(i+1),} for i, m in enumerate(set(markers))]
+    anns = [{'y':y_rel-y_delta*i, 'text':'class '+str(i+1),} for i, m in enumerate(set(markers))]
     for ann in anns:
         fig.add_annotation(
-            x=0,
+            x=x_rel + x_delta,
             y=ann['y'],
             text=ann['text'],
             showarrow=False,
             font=dict(size=24, color="black"),
             align='left'
         )
-    # fig.add_annotation(
-    #     x=0.8, y=0.9,  # Position of the annotation (relative to the figure)
-    #     text="Red: Circle\nBlue: Square\nGreen: Diamond\nOrange: Cross",  # Text to simulate a legend
-    #     showarrow=False,
-    #     font=dict(size=12, color="black"),
-    #     align="left",
-    #     borderpad=5,
-    #     bgcolor="rgba(255, 255, 255, 0.6)",  # Background color of the annotation box
-    #     bordercolor="black",  # Border color for the box
-    #     borderwidth=2  # Border width for the annotation box
-    # )
 
     # Adding symbols (e.g., circles, squares, diamonds, crosses) next to the annotation text
-    symbol_annotations = [{"symbol": m, "x": -1, "y": 1-0.5*i, "color": "blue"} for i, m in enumerate(set(markers))]
+    symbol_annotations = [{"symbol": m, "x": x_rel, "y": y_rel-y_delta*i, "color": "grey"} for i, m in enumerate(set(markers))]
 
     for annotation in symbol_annotations:
         fig.add_trace(go.Scatter(
             x=[annotation['x']], 
             y=[annotation['y']],
+            #xref='paper', yref='paper',
             mode='markers',
             marker=dict(
                 color=annotation['color'],
@@ -181,8 +182,39 @@ def clustering_visual(x, y, fig_title):
             ),
             showlegend=False  # Hide from the main legend
         ))
+    
+    #__________________________________________________________________________
+    #Adding annotations for known labels
+    anns = [{'y':y_rel-y_delta*i, 'text':gr,} for i, gr in enumerate(unique_groups)]
+    for ann in anns:
+        fig.add_annotation(
+            x=x_max + 3*x_delta,
+            y=ann['y'],
+            text=ann['text'],
+            showarrow=False,
+            font=dict(size=24, color="black"),
+            align='left'
+        )
+        
+    symbol_annotations = [{ "y": y_rel-y_delta*i, "color": group_colors[gr]} for i, gr in enumerate(unique_groups)]
+    #unique_groups, group_colors
+    for annotation in symbol_annotations:
+        fig.add_trace(go.Scatter(
+            x=[x_max+2*x_delta], 
+            y=[annotation['y']],
+            #xref='paper', yref='paper',
+            mode='markers',
+            marker=dict(
+                color=to_hex(annotation['color']),
+                symbol='circle',
+                size=24
+            ),
+            showlegend=False  # Hide from the main legend
+        ))
 
     st.plotly_chart(fig)
+    
+
     
 
 
