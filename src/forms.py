@@ -60,10 +60,28 @@ def umap_params_form():
         st.write("#### UMAP parameters")
         neigh = st.slider("Select the number of neighbors", 
                           min_value=1, max_value=10, value=5)
+        # should be dependent on the data size (up to 1/4)
+        
         min_dist = st.slider("Select the distance", 
                              min_value=0.0, max_value=1.0, value=0.5)
+        # controls how tightly UMAP is allowed to pack points together
+        
+        # ncomp = st.slider("Select the distance", 
+        #                      min_value=1, max_value=3, value=2)
+        # dimensionality of the reduced dimension space 
+        
+        metric = st.selectbox('Metric', ['euclidean', 'manhattan', 'chebyshev', 'minkowski', \
+                                         'canberra', 'braycurtis', 'haversine',\
+                                         'mahalanobis', 'wminkowski', 'seuclidean',\
+                                         'cosine', 'correlation'\
+                                         'hamming', 'jaccard', 'dice', 'russellrao', 'kulsinski',\
+                                         'rogerstanimoto', 'sokalmichener', 'sokalsneath', 'yule'])
+        # how distance is computed
+        
         st.session_state["umap_neigh"] = int(neigh)
         st.session_state["umap_min_dist"] = float(min_dist)
+        #st.session_state["umap_ncomp"] = int(ncomp)
+        st.session_state["umap_metric"] = str(metric)
         submit_button = st.form_submit_button("Submit")
     return neigh, min_dist, submit_button
 

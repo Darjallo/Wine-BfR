@@ -47,9 +47,13 @@ for key, default_value in {"sep": ",",
                            "step_3_2_ok": False, # parameter selection
                            "df_norm1": pd.DataFrame(),
                            "df_dimred": pd.DataFrame(),
+                           
                            "dimred": None, # dimention reduction algorithm selected
                            "umap_neigh": 15,
                            "umap_min_dist": 0.5,
+                           "umap_ncomp": 2,
+                           "umap_metric": 'euclidian',
+                           
                            "step_4_1_ok": False, # clustering alg selection
                            "step_4_2_ok": False, # params for clustering
                            "min_cluster_size": 5,
@@ -261,8 +265,11 @@ def scale_dimred(df, scaler): # make kwargs
     return vals # scaled (or not scaled) data before dimred
 
 @st.cache_data
-def plot_dimred(vals, dimred, neigh, min_dist):
-    output_dimred = ct.dim_reduction(vals, dimred, neigh, min_dist)
+def plot_dimred(vals, paras):
+# 'paras' is introduced here only make the function run once new values are available
+# alternatively it does not use the new values stored in session state
+# therefore all possible paras are passed to this function
+    output_dimred = ct.dim_reduction(vals)
     return output_dimred
     
 with col_dimred_2:
@@ -271,9 +278,9 @@ with col_dimred_2:
             st.write(submit_button_3_2)
             st.write(st.session_state["dimred"])
             scaled_dimred = scale_dimred(df_norm1, scaler,)
-            df_dimred = plot_dimred(scaled_dimred, st.session_state["dimred"],
-                                    st.session_state["umap_neigh"],
-                                    st.session_state["umap_min_dist"])
+            paras = [st.session_state["umap_neigh"], st.session_state["umap_min_dist"],
+                     st.session_state["umap_ncomp"], st.session_state["umap_metric"]]
+            df_dimred = plot_dimred(scaled_dimred, paras)
             st.session_state["df_dimred"] = df_dimred
             st.session_state["step_3_2_ok"] = True
         

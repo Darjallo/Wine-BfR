@@ -185,16 +185,21 @@ def normal(df, dataprep2):
     return vals
 
 
-def apply_umap(vals, neigh, min_dist):
-    reducer = umap.UMAP(n_neighbors=neigh, min_dist=min_dist,)
+def apply_umap(vals, neigh, min_dist, ncomp, m):
+    reducer = umap.UMAP(n_neighbors=neigh, min_dist=min_dist,
+                        n_components=ncomp, metric=m)
     embedding = reducer.fit_transform(vals)
     st.write(embedding)
     return embedding
 
-def dim_reduction(vals, dataprep, neigh, min_dist):
-    # extend list of parameters, make them kwargs
+def dim_reduction(vals): 
+    dataprep = st.session_state["dimred"]
     if dataprep == 'UMAP':
-        embedding = apply_umap(vals, neigh, min_dist)
+        neigh = st.session_state["umap_neigh"]
+        min_dist = st.session_state["umap_min_dist"]
+        ncomp = st.session_state["umap_ncomp"]
+        metric = st.session_state["umap_metric"]
+        embedding = apply_umap(vals, neigh, min_dist, ncomp, metric)
         # figure
         v.dim_red_visual(embedding[:, 0], embedding[:, 1], 'Labels', 'UMAP')
         
