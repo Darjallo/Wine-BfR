@@ -56,10 +56,13 @@ def data_norm_form(max_val):
 
 # 3 or 4? UMAP parameters
 def umap_params_form():
+    data_len = len(st.session_state['df'])
+    max_val = int(data_len/4)
+    v = int(max_val/2)
     with st.form("umap_params"):
         st.write("#### UMAP parameters")
         neigh = st.slider("Select the number of neighbors", 
-                          min_value=1, max_value=10, value=5)
+                          min_value=1, max_value=max_val, value=v)
         # should be dependent on the data size (up to 1/4)
         
         min_dist = st.slider("Select the distance", 
@@ -92,10 +95,16 @@ def hdbscan_params_form():
         st.write("#### HDBSCAN parameters")
         min_cluster_size = st.slider("Select the minimum cluster size", \
                                      min_value=2, max_value=20)
+        min_samples = st.slider("Select minimum amount of samples in a cluster", \
+                                     min_value=1, max_value=20)
         cluster_selection_epsilon = st.slider("Select cluster selection epsilon", \
-                                     min_value=0.0, max_value=1.0, value=0.0)
+                                     min_value=0.0, max_value=1.0, value=0.5)
+        cluster_sel_method = st.selectbox('Method to select clusters (Excess of Mass or leaf)', ['eom', 'leaf'])
+        allow_single_cluster = st.selectbox('Allow single cluster', [True, False])
 
-        st.session_state["min_cluster_size"] = int(min_cluster_size)
-        st.session_state["cluster_selection_epsilon"] = float(cluster_selection_epsilon)
+        st.session_state["hdbscan_min_cluster_size"] = int(min_cluster_size)
+        st.session_state["hdbscan_min_samples"] = int(min_samples)
+        st.session_state["hdbscan_cluster_selection_epsilon"] = float(cluster_selection_epsilon)
+        st.session_state["hdbscan_cluster_selection_method"] = str(cluster_sel_method)
         submit_button = st.form_submit_button("Submit")
     return min_cluster_size, cluster_selection_epsilon, submit_button

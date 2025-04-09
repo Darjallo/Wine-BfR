@@ -56,8 +56,11 @@ for key, default_value in {"sep": ",",
                            
                            "step_4_1_ok": False, # clustering alg selection
                            "step_4_2_ok": False, # params for clustering
-                           "min_cluster_size": 5,
-                           "cluster_selection_epsilon":0.5,
+                           
+                           "hdbscan_min_cluster_size": 5,
+                           "hdbscan_min_samples": 5,
+                           "hdbscan_cluster_selection_epsilon":0.5,
+                           "hdbscan_cluster_selection_method": "eom",
                            }.items():
     if key not in st.session_state:
         st.session_state[key] = default_value
