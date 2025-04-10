@@ -158,12 +158,13 @@ def clustering_visual(x, y, fig_title):
     anns = [{'y':y_rel-y_delta*i, 'text':'class '+str(i+1),} for i, m in enumerate(set(markers))]
     for ann in anns:
         fig.add_annotation(
-            x=x_rel + x_delta,
+            x=x_rel + 0.5*x_delta,
             y=ann['y'],
             text=ann['text'],
             showarrow=False,
             font=dict(size=24, color="black"),
-            align='left'
+            align='left',
+            xanchor='left' 
         )
 
     # Adding symbols (e.g., circles, squares, diamonds, crosses) next to the annotation text
@@ -188,12 +189,13 @@ def clustering_visual(x, y, fig_title):
     anns = [{'y':y_rel-y_delta*i, 'text':gr,} for i, gr in enumerate(unique_groups)]
     for ann in anns:
         fig.add_annotation(
-            x=x_max + 3*x_delta,
+            x=x_max + 2.5*x_delta,
             y=ann['y'],
             text=ann['text'],
             showarrow=False,
             font=dict(size=24, color="black"),
-            align='left'
+            align='left',
+            xanchor='left' 
         )
         
     symbol_annotations = [{ "y": y_rel-y_delta*i, "color": group_colors[gr]} for i, gr in enumerate(unique_groups)]

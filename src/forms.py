@@ -100,11 +100,12 @@ def hdbscan_params_form():
         cluster_selection_epsilon = st.slider("Select cluster selection epsilon", \
                                      min_value=0.0, max_value=1.0, value=0.5)
         cluster_sel_method = st.selectbox('Method to select clusters (Excess of Mass or leaf)', ['eom', 'leaf'])
-        allow_single_cluster = st.selectbox('Allow single cluster', [True, False])
+        allow_single_cluster = st.selectbox('Allow single cluster', [False, True])
 
         st.session_state["hdbscan_min_cluster_size"] = int(min_cluster_size)
         st.session_state["hdbscan_min_samples"] = int(min_samples)
         st.session_state["hdbscan_cluster_selection_epsilon"] = float(cluster_selection_epsilon)
         st.session_state["hdbscan_cluster_selection_method"] = str(cluster_sel_method)
+        st.session_state["hdbscan_allow_single_cluster"] = allow_single_cluster
         submit_button = st.form_submit_button("Submit")
     return min_cluster_size, cluster_selection_epsilon, submit_button

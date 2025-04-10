@@ -217,10 +217,13 @@ def group_naming(groups):
 
 def clustering(vals, dataprep, groups):
     if dataprep == 'HDBSCAN':
-        m_c_s = st.session_state["min_cluster_size"]
-        eps = st.session_state["cluster_selection_epsilon"]
 
-        hdb = HDBSCAN(cluster_selection_epsilon = eps, min_cluster_size = m_c_s).fit(vals) 
+        hdb = HDBSCAN(cluster_selection_epsilon=st.session_state["hdbscan_cluster_selection_epsilon"], 
+                      min_cluster_size = st.session_state["hdbscan_min_cluster_size"],
+                      min_samples=st.session_state["hdbscan_min_samples"],
+                      cluster_selection_method=st.session_state["hdbscan_cluster_selection_method"],
+                      allow_single_cluster=st.session_state["hdbscan_allow_single_cluster"]
+                      ).fit(vals) 
         labels = hdb.labels_ 
         st.session_state["class_categories"] = labels
         probabilities = hdb.probabilities_

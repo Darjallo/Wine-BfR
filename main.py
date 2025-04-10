@@ -61,6 +61,7 @@ for key, default_value in {"sep": ",",
                            "hdbscan_min_samples": 5,
                            "hdbscan_cluster_selection_epsilon":0.5,
                            "hdbscan_cluster_selection_method": "eom",
+                           "hdbscan_allow_single_cluster": False,
                            }.items():
     if key not in st.session_state:
         st.session_state[key] = default_value
@@ -281,9 +282,9 @@ with col_dimred_2:
             st.write(submit_button_3_2)
             st.write(st.session_state["dimred"])
             scaled_dimred = scale_dimred(df_norm1, scaler,)
-            paras = [st.session_state["umap_neigh"], st.session_state["umap_min_dist"],
+            dimred_paras = [st.session_state["umap_neigh"], st.session_state["umap_min_dist"],
                      st.session_state["umap_ncomp"], st.session_state["umap_metric"]]
-            df_dimred = plot_dimred(scaled_dimred, paras)
+            df_dimred = plot_dimred(scaled_dimred, dimred_paras)
             st.session_state["df_dimred"] = df_dimred
             st.session_state["step_3_2_ok"] = True
         
