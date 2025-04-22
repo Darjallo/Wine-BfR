@@ -6,6 +6,7 @@ Created on Thu Mar 20 17:15:54 2025
 """
 
 import streamlit as st
+import re
 
 # 1  data upload form
 def data_upload_form():
@@ -24,16 +25,52 @@ def data_upload_form():
         uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
 
         # Data classification selection
-        selected_data_type = st.radio("Please select one of the following options:",
-                                      ["This is the data with unknown labels", 
-                                       "This is the test data with known labels"],
-                                      index=None)
+        # selected_data_type = st.radio("Please select one of the following options:",
+        #                               ["This is the data with unknown labels", 
+        #                                "This is the test data with known labels"],
+        #                               index=None)
 
         # Submit button
         submit_button = st.form_submit_button("Submit")
 
     # Return the collected values
-    return data_type, uploaded_file, selected_data_type, submit_button
+    return data_type, uploaded_file, submit_button #selected_data_type, 
+
+
+# 1.2 metadata and labels
+def data_metadata_labels(df):
+
+    # Get columns that contain at least 2 letters
+    cols = list(df.columns)
+    cols = [c for c in cols if len(re.findall(r'[A-Za-z]', str(c))) >= 2]
+    
+    # Let the user select label columns
+    label_main = st.selectbox(
+        "Select the column that shall be used as the main label",
+        cols,
+        index=None,
+        placeholder="",
+    )
+    
+    # Let the user select label columns
+    labels = st.multiselect(
+        "Select column(s) that shall be used as labels, groups or unique identifiers",
+        cols,
+        []
+    )
+    
+    # Dynamically show metadata as "the rest" of the columns
+    metadata = [c for c in cols if c not in labels and c not in [label_main]]
+    
+    st.write("Metadata columns that are not relevant for visual analysis:")
+    st.write(', '.join(metadata))
+    
+    # Optional: use a form just for final confirmation
+    with st.form("confirm_form"):
+        submit_button = st.form_submit_button("Submit")
+
+    return [label_main], list(set(labels+[label_main])), metadata, submit_button
+
 
 # 2 data normalisation form
 def data_norm_form(max_val):
@@ -56,7 +93,7 @@ def data_norm_form(max_val):
 
 # 3 or 4? UMAP parameters
 def umap_params_form():
-    data_len = len(st.session_state['df'])
+    data_len = len(st.session_state['df_vals'])
     max_val = int(data_len/4)
     v = int(max_val/2)
     with st.form("umap_params"):
@@ -109,3 +146,9 @@ def hdbscan_params_form():
         st.session_state["hdbscan_allow_single_cluster"] = allow_single_cluster
         submit_button = st.form_submit_button("Submit")
     return min_cluster_size, cluster_selection_epsilon, submit_button
+
+def select_label():
+    with st.form("clustering label"):
+        l = st.selectbox('Choose a label for your data:', ['']+st.session_state["labels"])
+        submit_button = st.form_submit_button("Submit")
+    return l, submit_button

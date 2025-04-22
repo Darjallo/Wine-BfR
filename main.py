@@ -35,10 +35,14 @@ import src.forms as f
 
     
 # Initialize session state variables
-for key, default_value in {"sep": ",", 
-                           "df": None, # original data from file
-                           "groups": [], # column with data on entry labels
-                           "col": None,  # name of the column that contains info about labels
+for key, default_value in {
+                           "df_raw": pd.DataFrame(), # original data from file
+                           "main_label": [], 
+                           "labels": [], # all colums names that can be used as labels
+                           "labeled_data": pd.DataFrame(), # data of the labels
+                           "df_vals": pd.DataFrame(), # measurements only
+                           "data_type": '',
+                           
                            "processed_treshold": None, 
                            "processed_splmp": None,
                            "step_1_ok": False,
@@ -62,6 +66,10 @@ for key, default_value in {"sep": ",",
                            "hdbscan_cluster_selection_epsilon":0.5,
                            "hdbscan_cluster_selection_method": "eom",
                            "hdbscan_allow_single_cluster": False,
+                           
+                           "class_categories": [], # labels predicted by model
+                           "class_proba": [], # prediction probabilities
+                           "cluster_label": '',
                            }.items():
     if key not in st.session_state:
         st.session_state[key] = default_value
@@ -81,94 +89,98 @@ with col_upl_1:
     # 📌 Step 1: Data upload
     
     # data type German or American
-    # with or without labels 
     # file formats csv, txt, xlsx
     
-    data_type, uploaded_file, selected_data_type, submit_button_1 = f.data_upload_form()
+    data_type, uploaded_file, submit_button_1 = f.data_upload_form()
+    st.session_state['data_type'] = data_type
 
 #______________________________________________________________________________
 
 @st.cache_data
-def file_upload(data_type, uploaded_file, selected_data_type):
+def file_upload(uploaded_file):
     """
     Uploads file, verifies format, processes it, and handles preprocessing.
 
     Args:
-        data_type (str): Type of data ('American' or 'German').
         uploaded_file (file): The uploaded file object.
-        selected_data_type (str): The type of data (labeled or unlabeled).
         
     Returns:
-        pd.DataFrame, list, list: Processed DataFrame, groups (if labeled), column names for labels
+        pd.DataFrame: Processed DataFrame
     """
     if not uploaded_file:
         st.warning("Please upload a file.")
-        return pd.DataFrame(), None, None
-    
-    # Set CSV separator based on data type
-    st.session_state['sep'] = ',' if data_type == 'American' else ';' #German
+        return pd.DataFrame()
 
     
     # Verify file format and read data
     if not ct.file_format_verification(uploaded_file):
         st.error("Invalid file format. Please upload a valid CSV or Excel file.")
-        return pd.DataFrame(), None, None
+        return pd.DataFrame()
     
     # Convert file to DataFrame
     try:
         df = ct.file2df(uploaded_file)
+        st.session_state['df_raw'] = df
+        return df
     except Exception as e:
         st.error(f"Error reading the file: {e}")
-        return pd.DataFrame(), None, None
+        return pd.DataFrame()
 
-    st.success("✅ File successfully uploaded.")
-    st.write(df.head())
-    
-    
-    # Handling labeled vs unlabeled data
-    col, groups = [], None
-    if selected_data_type == "This is the data with unknown labels":
-        if data_type == 'German':
-            df = ct.german_df_processing(df, col)
-    elif selected_data_type == "This is the test data with known labels":
-        col = [df.columns[0]] # name of the column that contains info about labels
-        groups = df[df.columns[0]]
-        if data_type == 'German':
-            df = ct.german_df_processing(df, col)
+@st.cache_data
+def file_vals_labels(data_type, labels, metadata):
+    df = st.session_state['df_raw'] # original data
+    cols_vals = [c for c in list(df.columns) if c not in labels and c not in metadata]
+
+    labels_vals = df[labels]
+    if st.session_state['data_type']=='German':
+        df_vals = ct.german_df_processing(df[cols_vals])
     else:
-        st.warning("⚠ Please select a valid data type option.")
-        return pd.DataFrame(), None, None
+        df_vals = df[cols_vals]
+    st.session_state['df_vals'] = df_vals
+    return df_vals
 
-    # groups is a column with labels
-    return df, groups, col
 
 with col_upl_2:
     if submit_button_1:
-        df, groups, col = file_upload(data_type, uploaded_file, selected_data_type)
-        st.session_state['df'] = df
-        st.session_state['groups'] = groups
-        st.session_state['col'] = col
-              
-        if df is not None:
-            st.session_state["step_1_ok"] = True
+        df_raw = file_upload(uploaded_file)
+        st.session_state['df_raw'] = df_raw
+    if len(st.session_state['df_raw'])>0:
+        st.success("✅ File successfully uploaded.")
+        st.write(st.session_state['df_raw'].head())
+
+
+with col_upl_1:
+    if len(st.session_state['df_raw'])>0:
+        main_label, labels, metadata, submit_button_1_2 = f.data_metadata_labels(st.session_state['df_raw'])
+
+        df_raw = st.session_state['df_raw']
+        st.session_state['main_label'] = main_label
+        st.session_state['labels'] = labels
+
+if 'submit_button_1_2' in locals(): #??
+    if submit_button_1_2: # labels selected
+        st.session_state['labeled_data'] =df_raw[labels]     
+        # dataframe with the measurements only
+        df_vals = file_vals_labels(data_type, labels, metadata)
+        # convert negative data to 0
+        st.session_state['df_vals'] = ct.treshold(df_vals)
+        st.warning('Attention! Negative values are converted to 0! Do we need to discuss it?', icon="⚠️")
+        st.session_state["step_1_ok"] = True
 
 # st.write('df' in locals())
 # df disappears after the second button is pressed
-df = st.session_state['df'] 
-groups = st.session_state['groups'] 
-col = st.session_state['col'] 
+# df = st.session_state['df_raw'] 
+#groups = st.session_state['groups'] 
+#col = st.session_state['col'] 
 
 #______________________________________________________________________________
 # 📌 Step 2: First dataprocessing step (splmp, for example)
 @st.cache_data
-def first_processing(df, dataprep1, col, sample_idx):
+def first_processing(df_data, dataprep1, sample_idx):
     """
     Feature Selection (splmp)
 
-    """
-    #remove column "group" if present
-    df_data = ct.treshold(df, col) 
-    
+    """   
     if dataprep1 == "Other?":
         #ct.display_other_plot()
         df_norm=df_data
@@ -180,14 +192,14 @@ def first_processing(df, dataprep1, col, sample_idx):
         df_norm=df_data
         #st.warning("⚠ Are you sure you want no processing at this step?")
 
-    return df_data, df_norm
+    return df_norm
 
 @st.cache_data
-def first_processing_vis(df_data, df_norm, dataprep1, sample_idx):
+def first_processing_vis(df_norm, dataprep1, sample_idx):
     if dataprep1 == "Other?":
         ct.display_other_plot()
     elif dataprep1 == "splmp":
-        ct.splmp_plot(df_data, df_norm, sample_idx)   
+        ct.splmp_plot(df_norm, sample_idx)   
     else:
 
         st.warning("⚠ Are you sure you want no processing at this step?")
@@ -198,17 +210,19 @@ col_norm_1, col_norm_2 = st.columns(2)
 
 with col_norm_1:
     if st.session_state["step_1_ok"] == True:
-        dataprep1, sample_idx, submit_button_2 = f.data_norm_form(len(df))
+        dataprep1, sample_idx, submit_button_2 = f.data_norm_form(len(st.session_state['df_vals']))
     
        
     
 with col_norm_2:    
     if 'submit_button_2' in locals(): #??
         if submit_button_2:
-            df_tresh, df_norm1 = first_processing(df, dataprep1, col, sample_idx)   # after slpm
-            first_processing_vis(df_tresh, df_norm1, dataprep1, sample_idx)
+            df_norm1 = first_processing(st.session_state['df_vals'], dataprep1, sample_idx)   # after slpm
+            #first_processing_vis(df_norm1, dataprep1, sample_idx)
             st.session_state["step_2_ok"] = True
             st.session_state["df_norm1"] = df_norm1
+    if st.session_state["step_2_ok"] == True:
+        first_processing_vis(st.session_state["df_norm1"], dataprep1, sample_idx)
     
     df_norm1 = st.session_state["df_norm1"]
     if len(df_norm1)>0:
@@ -317,6 +331,10 @@ with col_clust_1:
         else:
             # add here for another clustering algorithms
             pass
+with col_clust_2:
+    if st.session_state["step_4_1_ok"] == True:
+        l, l_button = f.select_label()
+        st.session_state["cluster_label"] = l
 
 if 'submit_button_4_2' in locals():
     if submit_button_4_2:
@@ -325,7 +343,8 @@ if 'submit_button_4_2' in locals():
 with col_clust_2:
     if st.session_state["step_4_2_ok"] == True:
         ct.clustering(df_dimred, st.session_state["cluster_alg"], 
-                      st.session_state['groups'])
+                      st.session_state['df_raw'][st.session_state['main_label']],
+                      st.session_state["cluster_label"])
         #st.session_state["step_4_2_ok"] = True
         
 #@st.cache_data

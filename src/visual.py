@@ -12,12 +12,26 @@ from matplotlib.markers import MarkerStyle
 from matplotlib.colors import to_hex
 import plotly.graph_objects as go
 
-def vis_params():
+
+def vis_params(label):
     """
     define all necessary params for figures
     """
-    if "groups" in st.session_state:
-        groups = st.session_state["groups"]
+    if "main_label" in st.session_state:
+        d=st.session_state['df_raw']
+        c=st.session_state["main_label"]
+        
+        if isinstance(c, list):
+            c = c[0]     
+
+        if label == '': 
+            s = d[c]
+        else:
+            s = d[label]
+
+        groups = s.to_list()
+
+        
     else:
         groups = []
     if "class_categories" in st.session_state:  
@@ -81,7 +95,7 @@ def dim_red_visual(x, y, legend_title, fig_title):
     title is dimention reduction algorithm
     legends are known labels
     """
-    colors, plotly_colors, unique_groups, group_colors, markers = vis_params()
+    colors, plotly_colors, unique_groups, group_colors, markers = vis_params('')
 
     fig, ax = plt.subplots()
     ax.scatter(
@@ -99,9 +113,11 @@ def dim_red_visual(x, y, legend_title, fig_title):
     ax.set_title(fig_title)   
     st.pyplot(fig)
     
-def clustering_visual(x, y, fig_title):
-    colors, plotly_colors, unique_groups, group_colors, markers = vis_params()
+def clustering_visual(x, y, fig_title, label):
 
+    colors, plotly_colors, unique_groups, group_colors, markers = vis_params(label)
+
+    
     metas = [f"Point {i}" for i in range(len(x))]
     #data_colors = [colors.to_hex(c) for c in colors]
     fig = go.Figure()

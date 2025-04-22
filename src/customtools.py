@@ -51,11 +51,11 @@ def file2df(uploaded_file):
             print(f"An error occurred: {type(e).__name__} - {e}")
             return None
     
-def german_df_processing(df, exclude_columns):
-    df_transformed = df.drop(columns=exclude_columns).applymap(
+def german_df_processing(df):
+    df_transformed = df.applymap(
         lambda x: float(x.replace(",", ".")) if isinstance(x, str) else x
     )
-    return pd.concat([df_transformed, df[exclude_columns]], axis=1)        
+    return df_transformed       
  
     
 def process_splmp(df, col):
@@ -73,15 +73,16 @@ def process_splmp(df, col):
         df_norm = st.session_state['processed_splmp']
 
     # Display the plot
-    splmp_plot(df_data, df_norm, number)
+    splmp_plot(df_norm, number)
     return df_norm, None
 
 #  Plot `splmp` Results
-def splmp_plot(df_data, df_norm, number):
+def splmp_plot(df_norm, number):
     """Plots original vs modified data."""
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    x = list(df_data.columns)
-    y_original = df_data.iloc[number, :].tolist()
+    df = st.session_state['df_vals']
+    x = list(df.columns)
+    y_original = df.iloc[number, :].tolist()
     y_modified = df_norm.iloc[number, :].tolist()
 
     ax[0].plot(x, y_original)
@@ -107,12 +108,11 @@ def display_other_plot():
     ax.set_title("Other")
     st.pyplot(fig)
     
-def treshold(df, col):
+def treshold(df):
     
     # threshold above 0
     df = df.applymap(lambda x: 0 if (isinstance(x, (int, float)) and x < 0) else x)
-    # drop column with labels
-    df = df.drop(columns=col)
+
     return df
  
 def splmp(df):
@@ -215,7 +215,7 @@ def group_naming(groups):
     unique_groups = [remove_numbers(g) for g in groups]    
     return unique_groups
 
-def clustering(vals, dataprep, groups):
+def clustering(vals, dataprep, groups, l):
     if dataprep == 'HDBSCAN':
 
         hdb = HDBSCAN(cluster_selection_epsilon=st.session_state["hdbscan_cluster_selection_epsilon"], 
@@ -229,7 +229,7 @@ def clustering(vals, dataprep, groups):
         probabilities = hdb.probabilities_
         st.session_state["class_proba"] = probabilities
         
-        v.clustering_visual(vals[:,0], vals[:,1], "HDBSCAN")
+        v.clustering_visual(vals[:,0], vals[:,1], "HDBSCAN", l)
         
    
        
