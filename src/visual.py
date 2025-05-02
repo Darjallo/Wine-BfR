@@ -86,6 +86,7 @@ def vis_params(label):
         for i, category in enumerate(unique_categories)
     }
     markers = [category_markers[cat] for cat in categories]
+
     return colors, plotly_colors, unique_groups, group_colors, markers
 
 

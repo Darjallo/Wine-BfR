@@ -6,7 +6,6 @@ Created on Wed Sep 25 16:50:31 2024
 @author: Daria Savvateeva
 """
 
-from math import log
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
@@ -14,13 +13,6 @@ import umap
 import streamlit as st
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN, HDBSCAN
-#from matplotlib import cm
-#import mplcursors
-#import plotly.express as px
-import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib import colors
 
 from . import visual as v
 
@@ -121,26 +113,6 @@ def splmp(df):
     applies splm formula
     returns dataframe
     """
-
-    # tot_smpl_nmbr = len(df)
-    # i_max = len(df.columns) # number of chemicals
-    
-    # data=[]
-    # for chem in range(tot_smpl_nmbr):
-    #     row=[]
-    #     x_j = df.iloc[chem, :].sum()# sum of all elements in a row
-    #     if x_j!=0:
-    #         for col in range(i_max):
-    #             col_vals=df.iloc[:, col]
-    #             nmbr_valid_smpl = len([num for num in col_vals if num > 0])
-    #             coef = log((1+tot_smpl_nmbr)/(1+nmbr_valid_smpl))
-    #             x_ij = df.iloc[chem, col]      
-    #             row+=[x_ij/x_j*coef]
-    #             #print('x_j=', x_j, '  coef=', coef, '  nmbr_valid_smpl=', nmbr_valid_smpl)
-
-    #     else:
-    #         row=list(df.iloc[chem,:])
-    #     data+=[row]
     
     # Precompute constants and data needed for vectorized operations
     tot_smpl_nmbr = len(df)
@@ -173,27 +145,26 @@ def splmp(df):
     return out_df   
 
 
-def normal(df, dataprep2):
+def normal(df, method):
     """
     normalization of the data
 
     """
-    if dataprep2=="StandardScaler":
+    if method=="StandardScaler":
         vals = StandardScaler().fit_transform(df.values)
+        return pd.DataFrame(vals, columns=df.columns)
     else:
-        vals = df.values
-    return vals
+        return df
 
 
 def apply_umap(vals, neigh, min_dist, ncomp, m):
     reducer = umap.UMAP(n_neighbors=neigh, min_dist=min_dist,
                         n_components=ncomp, metric=m)
     embedding = reducer.fit_transform(vals)
-    st.write(embedding)
-    return embedding
+    return embedding # ndarray
 
 def dim_reduction(vals): 
-    dataprep = st.session_state["dimred"]
+    dataprep = "UMAP"  # check if alternatives are needed
     if dataprep == 'UMAP':
         neigh = st.session_state["umap_neigh"]
         min_dist = st.session_state["umap_min_dist"]
@@ -215,22 +186,23 @@ def group_naming(groups):
     unique_groups = [remove_numbers(g) for g in groups]    
     return unique_groups
 
-def clustering(vals, dataprep, groups, l):
-    if dataprep == 'HDBSCAN':
+def clustering(vals, groups, l):
 
-        hdb = HDBSCAN(cluster_selection_epsilon=st.session_state["hdbscan_cluster_selection_epsilon"], 
-                      min_cluster_size = st.session_state["hdbscan_min_cluster_size"],
-                      min_samples=st.session_state["hdbscan_min_samples"],
-                      cluster_selection_method=st.session_state["hdbscan_cluster_selection_method"],
-                      allow_single_cluster=st.session_state["hdbscan_allow_single_cluster"]
-                      ).fit(vals) 
-        labels = hdb.labels_ 
-        st.session_state["class_categories"] = labels
-        probabilities = hdb.probabilities_
-        st.session_state["class_proba"] = probabilities
-        
-        v.clustering_visual(vals[:,0], vals[:,1], "HDBSCAN", l)
-        
+    hdb = HDBSCAN(cluster_selection_epsilon=st.session_state["hdbscan_cluster_selection_epsilon"], 
+                  min_cluster_size = st.session_state["hdbscan_min_cluster_size"],
+                  min_samples=st.session_state["hdbscan_min_samples"],
+                  cluster_selection_method=st.session_state["hdbscan_cluster_selection_method"],
+                  allow_single_cluster=st.session_state["hdbscan_allow_single_cluster"]
+                  ).fit(vals) 
+    labels = hdb.labels_ 
+    #st.write(labels)
+    st.session_state["class_categories"] = labels
+    probabilities = hdb.probabilities_
+    st.session_state["class_proba"] = probabilities
+    
+    #v.clustering_visual(vals[:,0], vals[:,1], "HDBSCAN", l)
+    pass
+    
    
        
 

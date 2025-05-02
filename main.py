@@ -11,27 +11,26 @@ import streamlit as st
 st.set_page_config(layout="wide")
 
 #______________________________________________________________________________
-"""
-Pipeline:
-1) data entry
-2) pretreatment (different types of centering & standardization - 
-                 including normalization, pareto scaling, medoid scaling, etc)
-3) feature selection (SpImp, Missing Values Ratio (MVR), Threshold Setting, 
-                      Low Variance Filter, High Correlation Filter etc)
-4) dimension reduction (all the matrix factoring methods - PCA, LDA, MDS, NMDS, 
-                        proximity matrix factoring, etc; then the embedding 
-                        methods - UMAP, TriMAP, tSNE etc)
-5) clustering (K-means, K-medoids, various forms of hierachical clustering, 
-               BIRCH, DBScan, HDBScan etc)
-"""
+# """
+# Pipeline:
+# 1) data entry
+# 2) pretreatment (different types of centering & standardization - 
+#                  including normalization, pareto scaling, medoid scaling, etc)
+# 3) feature selection (SpImp, Missing Values Ratio (MVR), Threshold Setting, 
+#                       Low Variance Filter, High Correlation Filter etc)
+# 4) dimension reduction (all the matrix factoring methods - PCA, LDA, MDS, NMDS, 
+#                         proximity matrix factoring, etc; then the embedding 
+#                         methods - UMAP, TriMAP, tSNE etc)
+# 5) clustering (K-means, K-medoids, various forms of hierachical clustering, 
+#                BIRCH, DBScan, HDBScan etc)
+# """
 #______________________________________________________________________________
 
 
 import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 import src.customtools as ct
 import src.forms as f
+import src.visual as v
 
     
 # Initialize session state variables
@@ -48,11 +47,16 @@ for key, default_value in {
                            "step_1_ok": False,
                            "step_2_ok": False,
                            "step_3_1_ok": False, # algorithm selection (dim red)
-                           "step_3_2_ok": False, # parameter selection
-                           "df_norm1": pd.DataFrame(),
-                           "df_dimred": pd.DataFrame(),
+                           "step_3_2_ok": False, # umap 1 completed
+                           "step_3_3_ok": False, # hdbscan 1 completed
+                           "df_norm": pd.DataFrame(),#normalised data (1 step)
+                           "df_scaled": pd.DataFrame(),#scaled data (1 step)
                            
-                           "dimred": None, # dimention reduction algorithm selected
+                           "df_dimred": [], # ndarray values
+                           "df_clust": pd.DataFrame(), #??
+                           
+                           "method": None, # 1st selected algorithm
+                           
                            "umap_neigh": 15,
                            "umap_min_dist": 0.5,
                            "umap_ncomp": 2,
@@ -74,12 +78,19 @@ for key, default_value in {
     if key not in st.session_state:
         st.session_state[key] = default_value
 
+col_ttl_1, col_ttl_2 = st.columns(2)
+with col_ttl_1:
+    # Title of the app
+    st.title("App for spectra classification")
 
-# Title of the app
-st.title("App for spectra classification")
-#______________________________________________________________________________
-# Step 1: File Upload
-st.info('Some details on how the file with the data should look like')
+    st.info("""
+    ✅ Accepted file formats: xlsx, csv, txt  
+    📋 The data must be arranged as a table where the first few columns are metadata.  
+    💡 If the decimal part is separated with a comma, select German data type.
+    """)
+with col_ttl_2:
+    #st.title("")
+    st.image("BfR_Logo.png", width=400, )
 
 #______________________________________________________________________________
 # Create two columns for the layout
@@ -131,13 +142,13 @@ def file_vals_labels(data_type, labels, metadata):
     df = st.session_state['df_raw'] # original data
     cols_vals = [c for c in list(df.columns) if c not in labels and c not in metadata]
 
-    labels_vals = df[labels]
     if st.session_state['data_type']=='German':
         df_vals = ct.german_df_processing(df[cols_vals])
     else:
         df_vals = df[cols_vals]
-    st.session_state['df_vals'] = df_vals
-    return df_vals
+
+    st.session_state['df_vals'] = ct.treshold(df_vals) # convert negatives to 0
+    return
 
 
 with col_upl_2:
@@ -160,11 +171,10 @@ with col_upl_1:
 if 'submit_button_1_2' in locals(): #??
     if submit_button_1_2: # labels selected
         st.session_state['labeled_data'] =df_raw[labels]     
-        # dataframe with the measurements only
-        df_vals = file_vals_labels(data_type, labels, metadata)
-        # convert negative data to 0
-        st.session_state['df_vals'] = ct.treshold(df_vals)
-        st.warning('Attention! Negative values are converted to 0! Do we need to discuss it?', icon="⚠️")
+        # dataframe with the measurements only in session_state df_vals
+        file_vals_labels(data_type, labels, metadata)
+        df_vals = st.session_state['df_vals']
+        st.warning('Attention! Negative values are converted to 0!', icon="⚠️")
         st.session_state["step_1_ok"] = True
 
 # st.write('df' in locals())
@@ -174,25 +184,23 @@ if 'submit_button_1_2' in locals(): #??
 #col = st.session_state['col'] 
 
 #______________________________________________________________________________
-# 📌 Step 2: First dataprocessing step (splmp, for example)
+# 📌 Step 2: First dataprocessing step (splmp)
 @st.cache_data
-def first_processing(df_data, dataprep1, sample_idx):
+def first_processing(df_data, dataprep1):
     """
-    Feature Selection (splmp)
-
+    Feature Selection (spimp)
     """   
     if dataprep1 == "Other?":
-        #ct.display_other_plot()
-        df_norm=df_data
+        df_norm=df_data # nothing happens
+        
     elif dataprep1 == "splmp":
         df_norm = ct.splmp(df_data)
-        #ct.splmp_plot(df_data, df_norm, sample_idx)
     
     else:
         df_norm=df_data
-        #st.warning("⚠ Are you sure you want no processing at this step?")
-
-    return df_norm
+    
+    st.session_state["df_norm"] = df_norm
+    return
 
 @st.cache_data
 def first_processing_vis(df_norm, dataprep1, sample_idx):
@@ -201,163 +209,178 @@ def first_processing_vis(df_norm, dataprep1, sample_idx):
     elif dataprep1 == "splmp":
         ct.splmp_plot(df_norm, sample_idx)   
     else:
-
         st.warning("⚠ Are you sure you want no processing at this step?")
     pass
 
-st.divider()
+
 col_norm_1, col_norm_2 = st.columns(2)
 
-with col_norm_1:
-    if st.session_state["step_1_ok"] == True:
+if st.session_state["step_1_ok"] == True:
+    st.divider()
+
+    with col_norm_1:
         dataprep1, sample_idx, submit_button_2 = f.data_norm_form(len(st.session_state['df_vals']))
-    
+        
        
     
 with col_norm_2:    
     if 'submit_button_2' in locals(): #??
         if submit_button_2:
-            df_norm1 = first_processing(st.session_state['df_vals'], dataprep1, sample_idx)   # after slpm
-            #first_processing_vis(df_norm1, dataprep1, sample_idx)
+            first_processing(st.session_state['df_vals'], dataprep1)   # after slpm
             st.session_state["step_2_ok"] = True
-            st.session_state["df_norm1"] = df_norm1
+            df_norm = st.session_state["df_norm"]
+            if len(df_norm)>0:
+                st.write(df_norm)
+
     if st.session_state["step_2_ok"] == True:
-        first_processing_vis(st.session_state["df_norm1"], dataprep1, sample_idx)
-    
-    df_norm1 = st.session_state["df_norm1"]
-    if len(df_norm1)>0:
-        st.write(df_norm1.head())
+        first_processing_vis(st.session_state["df_norm"], dataprep1, sample_idx)
+
+
+
+# @st.cache_data
+# def scale(df, scaler): # make kwargs
+#     """
+#     do we need scaling here or later??
+#     """
+#     ct.normal(df, scaler)
+
+#     return ct.normal(df, scaler) # scaled (or not scaled) data before dimred
+
+# with col_norm_1:
+#     if st.session_state["step_2_ok"] == True:
+#         scaling, but_scaling = f.scaling_form(st.session_state["df_norm"])
+
+# if 'but_scaling' in locals():
+#     if but_scaling:
+#         st.session_state['df_scaled'] = scale(st.session_state["df_norm"], scaling)
+#         st.success('Scaling completed')
+
+
 
 #______________________________________________________________________________
 # 📌 Step 3: Standard Scaler and dimention reduction
-st.divider()
-col_dimred_1, col_dimred_2 = st.columns(2)
-st.write(st.session_state["step_2_ok"])
+@st.cache_data
+def scale_umap(df, scaler="StandardScaler"): # make kwargs
+    """
+    do we need scaling here or before feature selection??
+    return dataframe
+    """
+    return ct.normal(df, scaler)
 
-with col_dimred_1:
-    if st.session_state["step_2_ok"] == True:
-        
-        with st.form("dimention_reduction"):
-            st.write("### Standard Scaler ?")
-            scaler = st.selectbox("Select normalization", 
-                                  ["None", "StandardScaler", "Other?"], 
-                                  index=None)
+@st.cache_data
+def plot_umap(vals, paras):
+# 'paras' is introduced here only make the function run once new values are available
+# alternatively it does not use the new values stored in session state
+# therefore all possible paras are passed to this function
+    output_dimred = ct.dim_reduction(vals)
+    return output_dimred # ndarray
+
+col_step1_1, col_step1_2 = st.columns(2)
+if st.session_state["step_2_ok"] == True:
+    st.divider()
+
+    with col_step1_1:
+        if st.session_state["step_2_ok"] == True:
+            st.session_state["method"], submit_button_3_1 = f.algorithm_form()
+            # umap or hdbscan
             
-            st.write("### Dimention reduction")
-        
-            # Select dim red algorithm
-            dimred = st.selectbox("Select dimention reduction method", 
-                                     ["None", "UMAP", "Other?"], 
-                                     index=None, # no option is selected initially
-                                     )
-            st.session_state["dimred"] = dimred
-                
-            # Submit button
-            submit_button_3_1 = st.form_submit_button("Submit")
             
 if 'submit_button_3_1' in locals():
     if submit_button_3_1:
         st.session_state["step_3_1_ok"] = True
   
-with col_dimred_1:
-    st.write(st.session_state["step_3_1_ok"])
-    if st.session_state["step_3_1_ok"] == True:
-        # depending on selected dimention reduction method define parameters
-        if st.session_state["dimred"]=="UMAP":
+if st.session_state["step_3_1_ok"] == True:
+    # branching depending on 1st selected algorithm
+    if st.session_state["method"]=="UMAP":
+        # input umap params
+        with col_step1_1:
             umap_neigh, umap_min_dist, submit_button_3_2 = f.umap_params_form()
-            st.session_state["umap_neigh"] = umap_neigh
-            st.session_state["umap_min_dist"] = umap_min_dist
-        else:
-            # add here for another dim red algorithms
-            pass
-
-@st.cache_data
-def scale_dimred(df, scaler): # make kwargs
-    """
-    do we need scaling here or before feature selection??
-
-    """
-    vals = ct.normal(df, scaler)
-    #output_dimred = ct.dim_reduction(vals, dimred, neigh, min_dist)
-    #st.session_state["step_3_2_ok"] = True
-    return vals # scaled (or not scaled) data before dimred
-
-@st.cache_data
-def plot_dimred(vals, paras):
-# 'paras' is introduced here only make the function run once new values are available
-# alternatively it does not use the new values stored in session state
-# therefore all possible paras are passed to this function
-    output_dimred = ct.dim_reduction(vals)
-    return output_dimred
-    
-with col_dimred_2:
-    if 'submit_button_3_2' in locals():
-        if submit_button_3_2:
-            st.write(submit_button_3_2)
-            st.write(st.session_state["dimred"])
-            scaled_dimred = scale_dimred(df_norm1, scaler,)
-            dimred_paras = [st.session_state["umap_neigh"], st.session_state["umap_min_dist"],
-                     st.session_state["umap_ncomp"], st.session_state["umap_metric"]]
-            df_dimred = plot_dimred(scaled_dimred, dimred_paras)
-            st.session_state["df_dimred"] = df_dimred
-            st.session_state["step_3_2_ok"] = True
+        st.session_state["umap_neigh"] = umap_neigh
+        st.session_state["umap_min_dist"] = umap_min_dist
         
-df_dimred = st.session_state["df_dimred"]
+        st.warning("Data is normalised with StandardScaler before applying UMAP")
+        scaled_dimred = scale_umap(st.session_state["df_norm"])
+        umap_paras = [st.session_state["umap_neigh"], st.session_state["umap_min_dist"],
+                 st.session_state["umap_ncomp"], st.session_state["umap_metric"]]
 
-st.divider()
-col_clust_1, col_clust_2 = st.columns(2)
-with col_clust_1:
-    if st.session_state["step_3_2_ok"] == True:
-        # Select clustering algorithm
-        with st.form("clustering"):
-            st.write("### Clustering method")
-            cluster = st.selectbox("Select clustering algorithm", 
-                                     ["None", "HDBSCAN", "Other?"], index=None)
-            st.session_state["cluster_alg"] = cluster
-            submit_button_4_1 = st.form_submit_button("Submit")
+
+        with col_step1_2:
+            df_dimred = plot_umap(scaled_dimred, umap_paras)
+        st.session_state["df_dimred"] = df_dimred # ndarray values
+        st.session_state["step_3_2_ok"] = True
+        
+    elif st.session_state["method"]=="HDBSCAN":
+        st.session_state["step_3_2_ok"] = False # ? how to use it
+        with col_step1_1:
+            submit_button_3_3 = f.hdbscan_params_form()
             
-    if 'submit_button_4_1' in locals():
-        if submit_button_4_1:
-            # clustering algorithm was selected
-            st.session_state["step_4_1_ok"] = True 
-    
-    if st.session_state["step_4_1_ok"] == True:
-        # depending on selected clustering method define parameters
-        if st.session_state["cluster_alg"]=="HDBSCAN":
-            min_cluster_size, cluster_selection_epsilon, submit_button_4_2 = f.hdbscan_params_form()
-            #st.session_state["umap_neigh"] = umap_neigh
-            #st.session_state["umap_min_dist"] = umap_min_dist
-            # dublication, check also for umap
-        else:
-            # add here for another clustering algorithms
-            pass
-with col_clust_2:
-    if st.session_state["step_4_1_ok"] == True:
+        
+        
+        vals = st.session_state["df_norm"].values
+        with col_step1_1:
+            ct.clustering(vals, 
+                          st.session_state['df_raw'][st.session_state['main_label']],
+                          st.session_state["cluster_label"])
+            st.success("clustering completed")
+            st.session_state["step_3_3_ok"] = True
+            
+        
+        pass
+
+# ! umap plotting with plotly and various labels
+#! umap 2D and 3D options
+
+
+col_step2_1, col_step2_2 = st.columns(2)
+
+if (st.session_state["step_3_2_ok"] == True) or (st.session_state["step_3_3_ok"] == True):
+    # 2nd step
+    if st.session_state["method"]=="UMAP":
+        # do hdbscan
+        with col_step2_1:
+            submit_button_4 = f.hdbscan_params_form()
+        vals = st.session_state["df_dimred"]
+        ct.clustering(vals, 
+                      st.session_state['df_raw'][st.session_state['main_label']],
+                      st.session_state["cluster_label"])
+        
+        
+    else:
+        with col_step2_1:
+            umap_neigh, umap_min_dist, submit_button_4 = f.umap_params_form()
+        st.session_state["umap_neigh"] = umap_neigh
+        st.session_state["umap_min_dist"] = umap_min_dist
+        scaled_dimred = scale_umap(st.session_state["df_norm"])
+        umap_paras = [st.session_state["umap_neigh"], st.session_state["umap_min_dist"],
+                 st.session_state["umap_ncomp"], st.session_state["umap_metric"]]
+        
+        with col_step2_2:
+            df_dimred = plot_umap(scaled_dimred, umap_paras)
+        st.session_state["df_dimred"] = df_dimred
+            
+        pass
+        # do umap
+
+if 'submit_button_4' in locals():
+    #if submit_button_4_1:
+    with col_step2_2:
         l, l_button = f.select_label()
         st.session_state["cluster_label"] = l
 
-if 'submit_button_4_2' in locals():
-    if submit_button_4_2:
-        st.session_state["step_4_2_ok"] = True 
-        
-with col_clust_2:
-    if st.session_state["step_4_2_ok"] == True:
-        ct.clustering(df_dimred, st.session_state["cluster_alg"], 
-                      st.session_state['df_raw'][st.session_state['main_label']],
-                      st.session_state["cluster_label"])
-        #st.session_state["step_4_2_ok"] = True
-        
-#@st.cache_data
-#def do_clustering():  #(df_dimred, st.session_state["cluster_alg"], groups):
+        if 'l_button' in locals():
+            #if l_button:
+            vals = st.session_state["df_dimred"]
+            v.clustering_visual(vals[:,0], vals[:,1], "HDBSCAN", st.session_state["cluster_label"])
+# in the very end clustering of hdbscan + umap
     
-    
-#         st.write('4. Select clustering algorithm')
-#         dataprep4 = st.selectbox("Select step", ["None", "HDBSCAN", "Other?"], index=None)
         
-# #______________________________________________________________________________
-#         # Step 7: Apply HDBSCAN
-#         if 'dataprep4' in locals() and dataprep4 is not None:
-#             ct.clustering(output, dataprep4, groups)
-                
-#             st.success('Analysis finished')
 
+
+    
+
+    # if st.session_state["step_4_1_ok"] == True:
+    #     l, l_button = f.select_label()
+    #     st.session_state["cluster_label"] = l
+
+
+        

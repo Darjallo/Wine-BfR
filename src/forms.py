@@ -14,25 +14,16 @@ def data_upload_form():
     Displays the file upload form and returns user inputs.
     """
     with st.form("data_upload_form"):
-        st.write("### Upload and Configure Your Data")
-
+        st.write("### Upload and configure your data")
         # Data type selection
-        data_type = st.radio("Please select data type of your CSV:", 
+        data_type = st.radio("Please select data type of your file:", 
                              ["American", "German"], 
                              index=0)  
-
         # File uploader
-        uploaded_file = st.file_uploader("Choose a file", type=["csv", "txt", "xlsx"])
-
-        # Data classification selection
-        # selected_data_type = st.radio("Please select one of the following options:",
-        #                               ["This is the data with unknown labels", 
-        #                                "This is the test data with known labels"],
-        #                               index=None)
-
+        uploaded_file = st.file_uploader("Choose a file", 
+                                         type=["csv", "txt", "xlsx"])
         # Submit button
         submit_button = st.form_submit_button("Submit")
-
     # Return the collected values
     return data_type, uploaded_file, submit_button #selected_data_type, 
 
@@ -42,34 +33,38 @@ def data_metadata_labels(df):
 
     # Get columns that contain at least 2 letters
     cols = list(df.columns)
-    cols = [c for c in cols if len(re.findall(r'[A-Za-z]', str(c))) >= 2]
-    
+    st.warning('The table has to contain at least one column with labels or metadata.')
+    n = st.number_input('The measurements start from column number ', min_value=2, 
+                    max_value=len(cols), value="min", step=1,) - 1
+    metadata = cols[:n]
+    st.write('Columns with labels and/or metadata:')
+    st.write(', '.join(metadata))
     # Let the user select label columns
     label_main = st.selectbox(
         "Select the column that shall be used as the main label",
-        cols,
+        metadata,
         index=None,
         placeholder="",
     )
     
     # Let the user select label columns
     labels = st.multiselect(
-        "Select column(s) that shall be used as labels, groups or unique identifiers",
-        cols,
+        "Select column(s) that shall be used as additional labels, groups or unique identifiers",
+        metadata,
         []
     )
     
     # Dynamically show metadata as "the rest" of the columns
-    metadata = [c for c in cols if c not in labels and c not in [label_main]]
+    metadata_unused = [c for c in metadata if c not in labels and c not in [label_main]]
     
     st.write("Metadata columns that are not relevant for visual analysis:")
-    st.write(', '.join(metadata))
+    st.write(', '.join(metadata_unused))
     
     # Optional: use a form just for final confirmation
     with st.form("confirm_form"):
         submit_button = st.form_submit_button("Submit")
 
-    return [label_main], list(set(labels+[label_main])), metadata, submit_button
+    return [label_main], list(set(labels+[label_main])), metadata_unused, submit_button
 
 
 # 2 data normalisation form
@@ -89,7 +84,29 @@ def data_norm_form(max_val):
         # Submit button
         submit_button = st.form_submit_button("Submit")
     return dataprep1, sample_idx, submit_button
-        
+
+def scaling_form(df):        
+    with st.form("scaling"):
+        st.write("### Scaling")
+        scaler = st.selectbox("Select scaling", 
+                              ["None", "StandardScaler", "Other?"], 
+                              index=None)            
+        submit_button = st.form_submit_button("Submit")
+    return scaler, submit_button
+   
+
+def algorithm_form():
+    """
+    select UMAP or HDBSCAN first
+    """
+    with st.form("algorithm selection"):
+        st.write("### UMAP or HDBSCAN?")
+        method = st.selectbox("Select algorithm", 
+                              ["UMAP", "HDBSCAN"], 
+                              index=None)        
+        submit_button = st.form_submit_button("Submit")
+    return method, submit_button
+
 
 # 3 or 4? UMAP parameters
 def umap_params_form():
@@ -145,7 +162,7 @@ def hdbscan_params_form():
         st.session_state["hdbscan_cluster_selection_method"] = str(cluster_sel_method)
         st.session_state["hdbscan_allow_single_cluster"] = allow_single_cluster
         submit_button = st.form_submit_button("Submit")
-    return min_cluster_size, cluster_selection_epsilon, submit_button
+    return submit_button
 
 def select_label():
     with st.form("clustering label"):
