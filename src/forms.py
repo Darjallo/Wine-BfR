@@ -37,6 +37,7 @@ def data_metadata_labels(df):
     n = st.number_input('The measurements start from column number ', min_value=2, 
                     max_value=len(cols), value="min", step=1,) - 1
     metadata = cols[:n]
+    st.session_state['full_metadata'] = metadata
     st.write('Columns with labels and/or metadata:')
     st.write(', '.join(metadata))
     # Let the user select label columns
@@ -74,7 +75,7 @@ def data_norm_form(max_val):
     
         # Select data normalisation algorithm
         dataprep1 = st.selectbox("Select an action", 
-                                 ["None", "splmp", "Other?"], 
+                                 ["None", "SPIMP", "Other?"], 
                                  index=None, # no option is selected initially
                                  )
        # max_val = len(df)
@@ -169,3 +170,9 @@ def select_label():
         l = st.selectbox('Choose a label for your data:', ['']+st.session_state["labels"])
         submit_button = st.form_submit_button("Submit")
     return l, submit_button
+
+def select_hover():
+    with st.form("label on hovering"):
+        h = st.selectbox('Choose a label on hovering:', st.session_state['full_metadata'])
+        submit_button = st.form_submit_button("Submit")
+    return h, submit_button

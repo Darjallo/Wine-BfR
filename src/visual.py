@@ -118,8 +118,12 @@ def clustering_visual(x, y, fig_title, label):
 
     colors, plotly_colors, unique_groups, group_colors, markers = vis_params(label)
 
-    
-    metas = [f"Point {i}" for i in range(len(x))]
+    if st.session_state["hover_label"]=='':
+        metas = [f"Point {i}" for i in range(len(x))]
+    else:
+        d=st.session_state['df_raw']
+        c=st.session_state["hover_label"]
+        metas = d[c]
     #data_colors = [colors.to_hex(c) for c in colors]
     fig = go.Figure()
     for x_i, y_i, meta, color, marker in zip(x, y, metas, plotly_colors, markers):
@@ -156,7 +160,7 @@ def clustering_visual(x, y, fig_title, label):
     xaxis_title="",
     yaxis_title="",
     showlegend=False,
-    autosize=True,  # Let Plotly auto size the plot
+    autosize=False,  # Let Plotly auto size the plot
     width=900,  # You can adjust the size as needed
     height=900,  # Same width and height for a square shape
     plot_bgcolor="white",  # Background color of the plot area
@@ -231,7 +235,7 @@ def clustering_visual(x, y, fig_title, label):
             showlegend=False  # Hide from the main legend
         ))
 
-    st.plotly_chart(fig)
+    st.plotly_chart(fig, use_container_width=True)
     
 
     
