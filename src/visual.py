@@ -6,10 +6,12 @@ Created on Mon Mar 31 19:41:14 2025
 """
 
 import numpy as np
+import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt 
 from matplotlib.markers import MarkerStyle
 from matplotlib.colors import to_hex
+import plotly.express as px
 import plotly.graph_objects as go
 
 
@@ -89,6 +91,26 @@ def vis_params(label):
 
     return colors, plotly_colors, unique_groups, group_colors, markers
 
+def square_fig(x, y):
+    """
+    Takes x and y values, defines the coordinates of a square frame around x and y
+    """
+    x_min, x_max = min(x), max(x)
+    y_min, y_max = min(y), max(y)
+    x_mid = (x_min + x_max)/2
+    y_mid = (y_min + y_max)/2
+    
+    x_half = x_mid - x_min
+    y_half = y_mid - y_min
+    bigger = max(x_half, y_half)*1.05
+    
+    
+    x_range=[x_mid-bigger, x_mid+bigger]
+    y_range=[y_mid-bigger, y_mid+bigger]
+    
+    y_delta = 0.1*(y_max-y_min)
+    x_delta = 0.1*(x_max-x_min)
+    return x_range, y_range, x_delta, y_delta, x_max, y_max
 
 def dim_red_visual(x, y, legend_title, fig_title):
     """
@@ -97,27 +119,90 @@ def dim_red_visual(x, y, legend_title, fig_title):
     legends are known labels
     """
     colors, plotly_colors, unique_groups, group_colors, markers = vis_params('')
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(
+        x=x,
+        y=y,
+        mode='markers',
+        marker=dict(
+            color=plotly_colors,
+            symbol='circle',
+            size=20,
+            opacity=0.6,
+        ),
+        #name=meta,
+        #hovertext=meta,
+        #hoverinfo='text'
+    ))
+        
+    x_range, y_range, x_delta, y_delta, x_max, y_max = square_fig(x, y)
 
-    fig, ax = plt.subplots()
-    ax.scatter(
-        x, y,
-        c=colors,
-        edgecolors="none",
-        alpha=0.6   
-    )
-    handles = [plt.Line2D([0], [0], marker='o', color='w', 
-                          markerfacecolor=group_colors[group], alpha=0.6, 
-                          markersize=10) 
-       for group in unique_groups]
+    fig.update_layout(width=700, height=600)
+    fig.update_layout(showlegend=False)
+    fig.update_xaxes(scaleanchor="y", showgrid=False, zeroline=False, 
+                     showticklabels=False, range=x_range, scaleratio=1) 
+    fig.update_yaxes(scaleanchor="x", showgrid=False, zeroline=False, 
+                     showticklabels=False, range=y_range, scaleratio=1) 
+
+
+
+
+# LEGEND
+    #Adding annotations for known labels
+    anns = [{'y':y_max-y_delta*i, 'text':gr,} for i, gr in enumerate(unique_groups)]
+    for ann in anns:
+        fig.add_annotation(
+            x=x_max + 2.5*x_delta,
+            y=ann['y'],
+            text=ann['text'],
+            showarrow=False,
+            font=dict(size=24, color="black"),
+            align='left',
+            xanchor='left' 
+        )
+        
+    symbol_annotations = [{ "y": y_max-y_delta*i, "color": group_colors[gr]} for i, gr in enumerate(unique_groups)]
+    #unique_groups, group_colors
+    for annotation in symbol_annotations:
+        fig.add_trace(go.Scatter(
+            x=[x_max+2*x_delta], 
+            y=[annotation['y']],
+            #xref='paper', yref='paper',
+            mode='markers',
+            marker=dict(
+                color=to_hex(annotation['color']),
+                symbol='circle',
+                size=20
+            ),
+            showlegend=False  # Hide from the main legend
+        ))
+    # Show plot in Streamlit
+    st.plotly_chart(fig)
+
+
+#____________
+    # fig, ax = plt.subplots()
+    # ax.scatter(
+    #     x, y,
+    #     c=colors,
+    #     edgecolors="none",
+    #     alpha=0.6   
+    # )
+    # handles = [plt.Line2D([0], [0], marker='o', color='w', 
+    #                       markerfacecolor=group_colors[group], alpha=0.6, 
+    #                       markersize=10) 
+    #    for group in unique_groups]
    
-    ax.legend(handles, unique_groups, title=legend_title)
-    ax.set_title(fig_title)   
-    st.pyplot(fig)
+    # ax.legend(handles, unique_groups, title=legend_title)
+    # ax.set_title(fig_title)   
+    # st.pyplot(fig)
     
 def clustering_visual(x, y, fig_title, label):
 
     colors, plotly_colors, unique_groups, group_colors, markers = vis_params(label)
-
+    
     if st.session_state["hover_label"]=='':
         metas = [f"Point {i}" for i in range(len(x))]
     else:
@@ -165,11 +250,11 @@ def clustering_visual(x, y, fig_title, label):
     height=900,  # Same width and height for a square shape
     plot_bgcolor="white",  # Background color of the plot area
     paper_bgcolor="white",  # Background color of the paper
-    shapes=[dict(
-        type="rect",  # Shape type is rectangle
-        x0=x_min-x_delta, x1=1.1*x_max, y0=y_min-y_delta, y1=1.1*y_max,  # Coordinates for the full frame
-        line=dict(color="blue", width=2)  # Frame color and width
-    )],
+    # shapes=[dict(
+    #     type="rect",  # Shape type is rectangle
+    #     x0=x_min-x_delta, x1=1.1*x_max, y0=y_min-y_delta, y1=1.1*y_max,  # Coordinates for the full frame
+    #     line=dict(color="blue", width=2)  # Frame color and width
+    # )],
     )
     fig.update_xaxes(scaleanchor="y", showgrid=False, zeroline=False, showticklabels=False)  # Hide x-axis gridlines, zero line, and ticks
     fig.update_yaxes(scaleanchor="x", showgrid=False, zeroline=False, showticklabels=False)  # Hide y-axis gridlines, zero line, and ticks
