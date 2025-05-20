@@ -199,7 +199,7 @@ def first_processing(df_data, dataprep1):
     if dataprep1 == "Other?":
         df_norm=df_data # nothing happens
         
-    elif dataprep1 == "splmp":
+    elif dataprep1 == "SPIMP":
         df_norm = ct.splmp(df_data)
     
     else:
@@ -212,7 +212,7 @@ def first_processing(df_data, dataprep1):
 def first_processing_vis(df_norm, dataprep1, sample_idx):
     if dataprep1 == "Other?":
         ct.display_other_plot()
-    elif dataprep1 == "splmp":
+    elif dataprep1 == "SPIMP":
         ct.splmp_plot(df_norm, sample_idx)   
     else:
         st.warning("⚠ Are you sure you want no processing at this step?")
