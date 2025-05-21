@@ -38,7 +38,14 @@ def vis_params(label):
         groups = []
     if "class_categories" in st.session_state:  
         categories = st.session_state["class_categories"]
-        unique_categories = np.unique(categories)
+        #categories = categories.to_list()
+        #categories = ['noise' if cat == -1 else cat for cat in categories]
+        #unique_categories = np.unique(categories)
+        unique_categories = list(set(categories))
+        #unique_categories = unique_categories.tolist()
+        # Replace -1 with 'noise'
+        #unique_categories = ['noise' if cat == -1 else cat for cat in unique_categories]
+        #st.write(unique_categories)
     else:
         categories = []
         unique_categories = []
@@ -88,8 +95,8 @@ def vis_params(label):
         for i, category in enumerate(unique_categories)
     }
     markers = [category_markers[cat] for cat in categories]
-
-    return colors, plotly_colors, unique_groups, group_colors, markers
+    # check that the first category is noise
+    return colors, plotly_colors, unique_groups, group_colors, markers, categories
 
 def square_fig(x, y):
     """
@@ -118,7 +125,7 @@ def dim_red_visual(x, y, legend_title, fig_title):
     title is dimention reduction algorithm
     legends are known labels
     """
-    colors, plotly_colors, unique_groups, group_colors, markers = vis_params('')
+    colors, plotly_colors, unique_groups, group_colors, markers, _ = vis_params('')
     
     fig = go.Figure()
     
@@ -201,7 +208,7 @@ def dim_red_visual(x, y, legend_title, fig_title):
     
 def clustering_visual(x, y, fig_title, label):
 
-    colors, plotly_colors, unique_groups, group_colors, markers = vis_params(label)
+    colors, plotly_colors, unique_groups, group_colors, markers, categories = vis_params(label)
     
     if st.session_state["hover_label"]=='':
         metas = [f"Point {i}" for i in range(len(x))]
@@ -256,16 +263,28 @@ def clustering_visual(x, y, fig_title, label):
     #     line=dict(color="blue", width=2)  # Frame color and width
     # )],
     )
-    fig.update_xaxes(scaleanchor="y", showgrid=False, zeroline=False, showticklabels=False)  # Hide x-axis gridlines, zero line, and ticks
-    fig.update_yaxes(scaleanchor="x", showgrid=False, zeroline=False, showticklabels=False)  # Hide y-axis gridlines, zero line, and ticks
+    fig.update_xaxes(scaleanchor="y", showgrid=False, zeroline=False, showticklabels=False, scaleratio=1)  # Hide x-axis gridlines, zero line, and ticks
+    fig.update_yaxes(scaleanchor="x", showgrid=False, zeroline=False, showticklabels=False, scaleratio=1)  # Hide y-axis gridlines, zero line, and ticks
     
-   
-    
-    anns = [{'y':y_rel-y_delta*i, 'text':'class '+str(i+1),} for i, m in enumerate(set(markers))]
-    for ann in anns:
+    m_c = list(set(list(zip(markers, categories))))
+
+    annotations = []
+    for i, (m, cat) in enumerate(m_c):
+        text = 'noise' if cat == -1 else f'class {i + 1}'
+
+        annotations.append({"symbol": m, 
+                            "symbol_x": x_rel, 
+                            "symbol_y": y_rel-y_delta*i, 
+                            "color": "grey",
+                            'text_y': y_rel - y_delta * i, 
+                            'text': text
+                            })
+
+    for ann in annotations:
+        # Texts
         fig.add_annotation(
             x=x_rel + 0.5*x_delta,
-            y=ann['y'],
+            y=ann['text_y'],
             text=ann['text'],
             showarrow=False,
             font=dict(size=24, color="black"),
@@ -273,19 +292,15 @@ def clustering_visual(x, y, fig_title, label):
             xanchor='left' 
         )
 
-    # Adding symbols (e.g., circles, squares, diamonds, crosses) next to the annotation text
-    symbol_annotations = [{"symbol": m, "x": x_rel, "y": y_rel-y_delta*i, "color": "grey"} for i, m in enumerate(set(markers))]
-
-    for annotation in symbol_annotations:
+        # Symbols:
         fig.add_trace(go.Scatter(
-            x=[annotation['x']], 
-            y=[annotation['y']],
-            #xref='paper', yref='paper',
+            x=[ann['symbol_x']], 
+            y=[ann['symbol_y']],
             mode='markers',
             marker=dict(
-                color=annotation['color'],
-                symbol=annotation['symbol'],
-                size=24
+                color=ann['color'],
+                symbol=ann['symbol'],
+                size=24,
             ),
             showlegend=False  # Hide from the main legend
         ))

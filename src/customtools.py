@@ -12,7 +12,7 @@ from sklearn.preprocessing import StandardScaler
 import umap
 import streamlit as st
 import matplotlib.pyplot as plt
-from sklearn.cluster import DBSCAN, HDBSCAN
+from sklearn.cluster import HDBSCAN
 
 from . import visual as v
 
