@@ -84,7 +84,7 @@ for key, default_value in {
 col_ttl_1, col_ttl_2 = st.columns(2)
 with col_ttl_1:
     # Title of the app
-    st.title("App for spectra classification")
+    st.title("Graph theory based pipeline for data exploration")
 
     st.info("""
     ✅ Accepted file formats: xlsx, csv, txt  
