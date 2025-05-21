@@ -65,30 +65,30 @@ def process_splmp(df, col):
         df_norm = st.session_state['processed_splmp']
 
     # Display the plot
-    splmp_plot(df_norm, number)
+    v.splmp_plot(df_norm, number)
     return df_norm, None
 
 #  Plot `splmp` Results
-def splmp_plot(df_norm, number):
-    """Plots original vs modified data."""
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    df = st.session_state['df_vals']
-    x = list(df.columns)
-    y_original = df.iloc[number, :].tolist()
-    y_modified = df_norm.iloc[number, :].tolist()
+# def splmp_plot(df_norm, number):
+#     """Plots original vs modified data."""
+#     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+#     df = st.session_state['df_vals']
+#     x = list(df.columns)
+#     y_original = df.iloc[number, :].tolist()
+#     y_modified = df_norm.iloc[number, :].tolist()
 
-    ax[0].plot(x, y_original)
-    ax[0].set_title('Original')
-    ax[0].set_xlabel('X-Axis Label')
-    ax[0].set_ylabel('Y-Axis Label')
+#     ax[0].plot(x, y_original)
+#     ax[0].set_title('Original')
+#     ax[0].set_xlabel('X-Axis Label')
+#     ax[0].set_ylabel('Y-Axis Label')
 
-    ax[1].plot(x, y_modified, 'r')
-    ax[1].set_title('Modified')
-    ax[1].set_xlabel('X-Axis Label')
-    ax[1].set_ylabel('Y-Axis Label')
+#     ax[1].plot(x, y_modified, 'r')
+#     ax[1].set_title('Modified')
+#     ax[1].set_xlabel('X-Axis Label')
+#     ax[1].set_ylabel('Y-Axis Label')
 
-    plt.tight_layout()
-    st.pyplot(fig)
+#     plt.tight_layout()
+#     st.pyplot(fig)
 
 #  Handle "Other?" Option
 def display_other_plot():

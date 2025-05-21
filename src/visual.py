@@ -11,8 +11,8 @@ import streamlit as st
 import matplotlib.pyplot as plt 
 from matplotlib.markers import MarkerStyle
 from matplotlib.colors import to_hex
-import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
 def vis_params(label):
@@ -188,23 +188,6 @@ def dim_red_visual(x, y, legend_title, fig_title):
     # Show plot in Streamlit
     st.plotly_chart(fig)
 
-
-#____________
-    # fig, ax = plt.subplots()
-    # ax.scatter(
-    #     x, y,
-    #     c=colors,
-    #     edgecolors="none",
-    #     alpha=0.6   
-    # )
-    # handles = [plt.Line2D([0], [0], marker='o', color='w', 
-    #                       markerfacecolor=group_colors[group], alpha=0.6, 
-    #                       markersize=10) 
-    #    for group in unique_groups]
-   
-    # ax.legend(handles, unique_groups, title=legend_title)
-    # ax.set_title(fig_title)   
-    # st.pyplot(fig)
     
 def clustering_visual(x, y, fig_title, label):
 
@@ -344,5 +327,45 @@ def clustering_visual(x, y, fig_title, label):
     
 
     
+def splmp_plot(df_norm, number):
+    """
+    plot sample before and after processing
+    """
+    
+    df = st.session_state['df_vals']
+    x = list(df.columns)
+    y_original = df.iloc[number, :].tolist()
+    y_modified = df_norm.iloc[number, :].tolist()
+    
+    # Create 1x2 subplot layout
+    fig = make_subplots(rows=1, cols=2, subplot_titles=("Original", "Modified"))
+    
+    # Original plot
+    fig.add_trace(
+        go.Scatter(x=x, y=y_original, mode='lines', name='Original'),
+        row=1, col=1
+    )
+    
+    # Modified plot
+    fig.add_trace(
+        go.Scatter(x=x, y=y_modified, mode='lines', line=dict(color='red'), name='Modified'),
+        row=1, col=2
+    )
+
+
+    fig.update_xaxes(title_text=' ', row=1, col=1)
+    fig.update_yaxes(title_text=' ', row=1, col=1)
+    
+    fig.update_xaxes(title_text=' ', row=1, col=2)
+    fig.update_yaxes(title_text=' ', row=1, col=2)
+
+    fig.update_layout(
+        height=400, width=800,
+        title_text="SPIMP data processing",
+        showlegend=False,
+        margin=dict(t=50, b=30, l=30, r=30)
+    )
+    
+    st.plotly_chart(fig)
 
 

@@ -213,7 +213,7 @@ def first_processing_vis(df_norm, dataprep1, sample_idx):
     if dataprep1 == "Other?":
         ct.display_other_plot()
     elif dataprep1 == "SPIMP":
-        ct.splmp_plot(df_norm, sample_idx)   
+        v.splmp_plot(df_norm, sample_idx)   
     else:
         st.warning("⚠ Are you sure you want no processing at this step?")
     pass
