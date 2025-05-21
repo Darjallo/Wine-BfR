@@ -209,6 +209,10 @@ def dim_red_visual(x, y, legend_title, fig_title):
 def clustering_visual(x, y, fig_title, label):
 
     colors, plotly_colors, unique_groups, group_colors, markers, categories = vis_params(label)
+    m_c = list(set(list(zip(markers, categories))))
+    
+    border_dict = dict(color='Black', width=2)
+    borders = [border_dict if cat == -1 else {} for cat in categories]
     
     if st.session_state["hover_label"]=='':
         metas = [f"Point {i}" for i in range(len(x))]
@@ -218,7 +222,7 @@ def clustering_visual(x, y, fig_title, label):
         metas = d[c]
     #data_colors = [colors.to_hex(c) for c in colors]
     fig = go.Figure()
-    for x_i, y_i, meta, color, marker in zip(x, y, metas, plotly_colors, markers):
+    for x_i, y_i, meta, color, marker, b in zip(x, y, metas, plotly_colors, markers, borders):
         fig.add_trace(go.Scatter(
             x=[x_i],
             y=[y_i],
@@ -228,6 +232,7 @@ def clustering_visual(x, y, fig_title, label):
                 symbol=marker,
                 size=20,
                 opacity=0.6,
+                line=b,
             ),
             name=meta,
             hovertext=meta,
@@ -266,7 +271,7 @@ def clustering_visual(x, y, fig_title, label):
     fig.update_xaxes(scaleanchor="y", showgrid=False, zeroline=False, showticklabels=False, scaleratio=1)  # Hide x-axis gridlines, zero line, and ticks
     fig.update_yaxes(scaleanchor="x", showgrid=False, zeroline=False, showticklabels=False, scaleratio=1)  # Hide y-axis gridlines, zero line, and ticks
     
-    m_c = list(set(list(zip(markers, categories))))
+    
 
     annotations = []
     for i, (m, cat) in enumerate(m_c):
