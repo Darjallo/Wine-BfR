@@ -323,6 +323,39 @@ def clustering_visual(x, y, fig_title, label):
             showlegend=False  # Hide from the main legend
         ))
 
+    # list parameters used
+    if st.session_state["method"]=="UMAP":
+        u_step, h_step=1, 2
+    else:
+        u_step, h_step=2, 1
+    info_umap = [f'<b>UMAP parameters, step {u_step}</b>', f'Num of neighbours = {st.session_state["umap_neigh"]}', 
+                 f'Distance = {st.session_state["umap_min_dist"]}', f'Metric = {st.session_state["umap_metric"]}']
+    for i_par in range(len(info_umap)):
+        fig.add_annotation(
+            x=x_min-x_delta*0.5,
+            y=y_min - (i_par+1)*y_delta*0.5,
+            text=info_umap[i_par],
+            showarrow=False,
+            font=dict(size=16, color="black"),
+            align='left',
+            xanchor='left' 
+            )
+
+    info_hdbscan=[f'<b>HDBSCAN parameters, step {h_step}', f'Min cluster size = {st.session_state["hdbscan_min_cluster_size"]}', 
+                  f'Min N of samples in a cluster = {st.session_state["hdbscan_min_samples"]}', 
+                  f'Epsilon = {st.session_state["hdbscan_cluster_selection_epsilon"]}', 
+                  f'Method = {st.session_state["hdbscan_cluster_selection_method"]}', 
+                  f'Single cluster = {st.session_state["hdbscan_allow_single_cluster"]}']
+    for i_par in range(len(info_hdbscan)):
+        fig.add_annotation(
+            x=x_max - x_delta*0.5,
+            y=y_min - (i_par+1)*y_delta*0.5,
+            text=info_hdbscan[i_par],
+            showarrow=False,
+            font=dict(size=16, color="black"),
+            align='left',
+            xanchor='left' 
+            )
     st.plotly_chart(fig, use_container_width=True)
     
 
