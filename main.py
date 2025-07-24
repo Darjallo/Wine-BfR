@@ -397,17 +397,22 @@ if st.session_state["step_4_fig_ok"]:
         #if l_button:
         vals = st.session_state["df_dimred"]
        # st.write(st.session_state["cluster_label"])
-        v.clustering_visual(vals[:,0], vals[:,1], "HDBSCAN", st.session_state["cluster_label"])
+        fig = v.clustering_visual(vals[:,0], vals[:,1], "HDBSCAN", st.session_state["cluster_label"])
 # in the very end clustering of hdbscan + umap
     
-        
+# download svg image
 
+if 'fig' in locals():
+   
+    new_file_name, width, height, scale, submit_button_fig = f.svg_save_form()
+    if submit_button_fig:
+        with st.spinner("Generating SVG..."):
+            image = fig.to_image(format='svg', width=width, height=height, scale=scale)
+    
+        # Download the image with the new file name
+        st.download_button(label='Download svg', data=image, file_name=f"{new_file_name}.svg", mime='image/svg+xml')       
 
     
-
-    # if st.session_state["step_4_1_ok"] == True:
-    #     l, l_button = f.select_label()
-    #     st.session_state["cluster_label"] = l
 
 
         

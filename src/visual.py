@@ -358,6 +358,8 @@ def clustering_visual(x, y, fig_title, label):
             )
     st.plotly_chart(fig, use_container_width=True)
     
+    return fig
+    
 
     
 def splmp_plot(df_norm, number):

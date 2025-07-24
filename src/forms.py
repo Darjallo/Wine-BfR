@@ -176,3 +176,19 @@ def select_hover():
         h = st.selectbox('Choose a label on hovering:', st.session_state['full_metadata'])
         submit_button = st.form_submit_button("Submit")
     return h, submit_button
+
+
+
+def svg_save_form():
+    """
+    select figure parameters
+    """
+    with st.form("svg parameters"):
+        st.write("### Define parameters of the svg image")
+        new_file_name = st.text_input("Filename (without extension)", "figure")
+        width = st.number_input("Export width (px)", min_value=100, value=1500)
+        height = st.number_input("Export height (px)", min_value=100, value=1500)
+        scale = st.slider("Export scale (multiplier)", min_value=1, max_value=5, value=1)
+              
+        submit_button = st.form_submit_button("Submit")
+    return new_file_name, width, height, scale, submit_button
