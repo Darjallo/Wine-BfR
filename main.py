@@ -39,7 +39,8 @@ for key, default_value in {
                            "main_label": [], 
                            "labels": [], # all colums names that can be used as labels
                            "labeled_data": pd.DataFrame(), # data of the labels
-                           "df_vals": pd.DataFrame(), # measurements only
+                           "df_vals_no_filter": pd.DataFrame(), # measurements only
+                           "df_vals": pd.DataFrame(), # after filtering
                            "data_type": '',
                            
                            "processed_treshold": None, 
@@ -150,7 +151,7 @@ def file_vals_labels(data_type, labels, metadata):
     else:
         df_vals = df[cols_vals]
 
-    st.session_state['df_vals'] = ct.treshold(df_vals) # convert negatives to 0
+    st.session_state['df_vals_no_filter'] = ct.treshold(df_vals) # convert negatives to 0
     return
 
 
@@ -176,7 +177,7 @@ if 'submit_button_1_2' in locals(): #??
         st.session_state['labeled_data'] =df_raw[labels]     
         # dataframe with the measurements only in session_state df_vals
         file_vals_labels(data_type, labels, metadata)
-        df_vals = st.session_state['df_vals']
+        df_vals = st.session_state['df_vals_no_filter']
         with col_upl_2:
             st.subheader(':blue[Selected data for processing:]')
             st.dataframe(df_vals, key='row_values')
@@ -189,6 +190,25 @@ st.divider()
 #groups = st.session_state['groups'] 
 #col = st.session_state['col'] 
 
+@st.cache_data
+def feature_treshold(t):
+    st.session_state['df_vals'] = ct.feature_tr(t) 
+    return
+    
+    
+if st.session_state["step_1_ok"] == True:
+    st.subheader('optional step')
+    st.subheader('use treshold for features')
+    col_tresh1, col_tresh2=st.columns(2)
+    with col_tresh1:
+        percent, treshold_submit = f.treshold_form()
+        #form treshold input 
+    with col_tresh2:
+        feature_treshold(percent)
+        st.subheader(':blue[Filtered data:]')
+        st.dataframe(st.session_state['df_vals'], key='row_values')
+        #display table
+    st.divider()
 #______________________________________________________________________________
 # 📌 Step 2: First dataprocessing step (splmp)
 @st.cache_data

@@ -67,6 +67,13 @@ def data_metadata_labels(df):
 
     return [label_main], list(set(labels+[label_main])), metadata_unused, submit_button
 
+# 1.3 treshold for features
+def treshold_form():
+    with st.form("set feature treshold"):
+        percent = st.slider("% of featre value considered as noize", 
+                           min_value=0, max_value=100, value=0)
+        submit_button = st.form_submit_button("Submit")
+    return percent, submit_button
 
 # 2 data normalisation form
 def data_norm_form(max_val):

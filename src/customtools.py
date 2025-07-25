@@ -107,6 +107,17 @@ def treshold(df):
 
     return df
  
+def feature_tr(t):
+    df = st.session_state['df_vals_no_filter']
+    df_copy = df.copy()
+    #st.write(df_copy)
+    for column in df_copy.select_dtypes(include='number').columns:
+        max_val = df_copy[column].max()
+        threshold = max_val * t / 100
+        df_copy[column] = df_copy[column].apply(lambda x: x if x > threshold else 0)
+    return df_copy
+
+
 def splmp(df):
     """
     input: data above treshold
