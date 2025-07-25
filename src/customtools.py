@@ -111,10 +111,14 @@ def feature_tr(t):
     df = st.session_state['df_vals_no_filter']
     df_copy = df.copy()
     #st.write(df_copy)
-    for column in df_copy.select_dtypes(include='number').columns:
-        max_val = df_copy[column].max()
-        threshold = max_val * t / 100
-        df_copy[column] = df_copy[column].apply(lambda x: x if x > threshold else 0)
+    
+    def process_row(row):
+        row_max = row.max()
+        threshold = row_max * t / 100
+        return row.apply(lambda x: x if x >= threshold else 0)
+
+    df_copy = df_copy.apply(process_row, axis=1)
+    
     return df_copy
 
 
