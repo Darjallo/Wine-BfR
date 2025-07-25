@@ -117,11 +117,15 @@ def umap_params_form():
     with st.form("umap_params"):
         st.write("#### UMAP parameters")
         neigh = st.slider("Select the number of neighbors", 
-                          min_value=1, max_value=max_val, value=v)
+                          min_value=1, max_value=max_val, value=v, help="Balances of the local structure versus global structure of the data. \
+                        Low values: Focus on the local structure present in the data.\
+                        High values: Focus on the larger neighborhoods losing the fine structure.")
         # should be dependent on the data size (up to 1/4)
         
         min_dist = st.slider("Select the distance", 
-                             min_value=0.0, max_value=1.0, value=0.5)
+                             min_value=0.0, max_value=1.0, value=0.5, help="Controls how closely the points will be represented on the dimensional reduced plot.\
+                                 Low values: show more clustered points.\
+                                High values: tend to prevent clusters from forming, preserving the broad topological structure.")
         # controls how tightly UMAP is allowed to pack points together
         
         # ncomp = st.slider("Select the distance", 
@@ -133,7 +137,8 @@ def umap_params_form():
                                          'mahalanobis', 'wminkowski', 'seuclidean',\
                                          'cosine', 'correlation'\
                                          'hamming', 'jaccard', 'dice', 'russellrao', 'kulsinski',\
-                                         'rogerstanimoto', 'sokalmichener', 'sokalsneath', 'yule'])
+                                         'rogerstanimoto', 'sokalmichener', 'sokalsneath', 'yule'],
+                              help="Determines how the distances between the points in the multidimensional space are calculated.")
         # how distance is computed
         
         st.session_state["umap_neigh"] = int(neigh)
@@ -149,13 +154,26 @@ def hdbscan_params_form():
     with st.form("hdbscan_params"):
         st.write("#### HDBSCAN parameters")
         min_cluster_size = st.slider("Select the minimum cluster size", \
-                                     min_value=2, max_value=20)
+                                     min_value=2, max_value=20,
+                                     help="Sets the smallest group of samples for it to be considered a cluster.")
         min_samples = st.slider("Select minimum amount of samples in a cluster", \
-                                     min_value=1, max_value=20)
+                                     min_value=1, max_value=20,
+                                     help="Controls how conservative the clustering will be.\
+                                         Low values: Tends to include all samples in a cluster.\
+                                        High values: will mark more and more samples as being “noise” not including them in a cluster.")
         cluster_selection_epsilon = st.slider("Select cluster selection epsilon", \
-                                     min_value=0.0, max_value=1.0, value=0.5)
-        cluster_sel_method = st.selectbox('Method to select clusters (Excess of Mass or leaf)', ['eom', 'leaf'])
-        allow_single_cluster = st.selectbox('Allow single cluster', [False, True])
+                                     min_value=0.0, max_value=1.0, value=0.5,
+                                     help="This parameter affects the cluster merging, being the minimum distance for two clusters to be \
+                                         separate from each other. This parameter is very useful when using a low Minimum Cluster Size, \
+                                             but too many small clusters are formed, high values here would merge these clusters into \
+                                                 bigger ones. ")
+        cluster_sel_method = st.selectbox('Method to select clusters (Excess of Mass or leaf)', ['eom', 'leaf'],
+                                          help="Excess of Mass tend to produce 1 or 2 big clusters and many smaller ones, \
+                                              Leaf will tend to produce more smaller clusters like the leaves in a tree.")
+        allow_single_cluster = st.selectbox('Allow single cluster', [False, True],
+                                            help="Allows for the identification of one large cluster present in the data, \
+                                                useful in cases where a good structure is not present in the data or when there \
+                                                are too many small clusters.")
 
         st.session_state["hdbscan_min_cluster_size"] = int(min_cluster_size)
         st.session_state["hdbscan_min_samples"] = int(min_samples)
