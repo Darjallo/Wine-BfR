@@ -14,11 +14,7 @@ from matplotlib.colors import to_hex
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-
-def vis_params(label):
-    """
-    define all necessary params for figures
-    """
+def get_groups(label):
     if "main_label" in st.session_state:
         d=st.session_state['df_raw']
         c=st.session_state["main_label"]
@@ -36,6 +32,20 @@ def vis_params(label):
         
     else:
         groups = []
+        
+    unique_groups = list(set(groups))  # Get unique group labels
+    
+    # GROUP is a known labes of the sample
+    # len(groups) = length of all data
+    return groups, unique_groups
+
+def vis_params(label):
+    """
+    define all necessary params for figures
+    """
+    
+    groups, unique_groups = get_groups(label)
+        
     if "class_categories" in st.session_state:  
         categories = st.session_state["class_categories"]
         #categories = categories.to_list()
@@ -53,9 +63,16 @@ def vis_params(label):
     # GROUP is a known labes of the sample
     # CATEGORY is a class defined by a classification algorithm
     
-    unique_groups = list(set(groups))  # Get unique group labels
     group_colors = {group: plt.cm.tab10(i) for i, group 
                     in enumerate(unique_groups)}  # Assign colors
+    
+    custom_colors = st.session_state["custom_group_colors"]
+    
+    # CUSTOM COLOURS
+    # Update only if key exists in both dictionaries
+    for group in group_colors:
+        if group in custom_colors and custom_colors[group] != "":
+            group_colors[group] = custom_colors[group]
     
     # Map each group label to its color
     colors = [group_colors[group] for group in groups]
@@ -98,6 +115,13 @@ def vis_params(label):
     # check that the first category is noise
     return colors, plotly_colors, unique_groups, group_colors, markers, categories
 
+def custom_colors_shape(label):
+    """
+    if user wants custom colors and not filled data points
+
+    """
+    pass
+
 def square_fig(x, y):
     """
     Takes x and y values, defines the coordinates of a square frame around x and y
@@ -125,7 +149,7 @@ def dim_red_visual(x, y, legend_title, fig_title):
     title is dimention reduction algorithm
     legends are known labels
     """
-    colors, plotly_colors, unique_groups, group_colors, markers, _ = vis_params('')
+    colors, plotly_colors, unique_groups, group_colors, markers, _ = vis_params(st.session_state["cluster_label"])
     
     fig = go.Figure()
     

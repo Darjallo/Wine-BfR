@@ -78,6 +78,7 @@ for key, default_value in {
                            "class_proba": [], # prediction probabilities
                            "cluster_label": '',
                            "hover_label": '',
+                           "custom_group_colors": {}, # dictionary
                            }.items():
     if key not in st.session_state:
         st.session_state[key] = default_value
@@ -295,7 +296,7 @@ def scale_umap(df, scaler="StandardScaler"): # make kwargs
     return ct.normal(df, scaler)
 
 @st.cache_data
-def plot_umap(vals, paras):
+def plot_umap(vals, paras, color_dict, label):
 # 'paras' is introduced here only make the function run once new values are available
 # alternatively it does not use the new values stored in session state
 # therefore all possible paras are passed to this function
@@ -341,7 +342,9 @@ if st.session_state["method"] is not None:
 
         with col_step1_2:
             if st.session_state["step_3_2_ok"]:
-                df_dimred = plot_umap(scaled_dimred, umap_paras)
+                df_dimred = plot_umap(scaled_dimred, umap_paras, 
+                                      st.session_state["custom_group_colors"],
+                                      st.session_state["cluster_label"])
                 st.session_state["df_dimred"] = df_dimred # ndarray values
                 st.session_state["step_3_fig_ok"] = True
         
@@ -362,6 +365,7 @@ if st.session_state["method"] is not None:
                     st.session_state["step_3_3_ok"] = True
                     with col_step1_1:
                         st.success("clustering completed")
+                        
             
         
 
@@ -398,7 +402,9 @@ if (st.session_state["step_3_fig_ok"] == True) or (st.session_state["step_3_3_ok
         if 'submit_button_4' in locals():
             if submit_button_4:
                 with col_step2_2:
-                    df_dimred = plot_umap(scaled_dimred, umap_paras)
+                    df_dimred = plot_umap(scaled_dimred, umap_paras, 
+                                          st.session_state["custom_group_colors"],
+                                          st.session_state["cluster_label"])
                 st.session_state["df_dimred"] = df_dimred
                 st.session_state["step_4_fig_ok"] = True
             
@@ -412,6 +418,25 @@ if st.session_state["step_4_fig_ok"]:
         st.session_state["cluster_label"] = l
         h, h_button = f.select_hover()
         st.session_state["hover_label"] = h
+        # add color and countur selection
+        # if user wants change colors:
+        with st.expander(label="Customise colours of the data", expanded=False):
+            st.write("define colours here")
+            _, unique_groups = v.get_groups(st.session_state["cluster_label"])
+            col_drop1, col_drop2 = st.columns([1,2])
+            with col_drop1:
+                selected_group_name = st.selectbox("Search for a label:", options=unique_groups)
+            with col_drop2:
+                custom_color = st.text_input(f"Custom Color for :rainbow[{selected_group_name}]", value="", #label_visibility='collapsed',
+                                             help="Format: #000000")
+            # ckeck the color format
+            st.session_state["custom_group_colors"][selected_group_name]=custom_color
+                
+                
+            # create dictionary with new colours, save to session state
+            # add option to reset the dictionary with colors
+            
+            
 
     if 'l_button' in locals():
         #if l_button:
@@ -420,6 +445,12 @@ if st.session_state["step_4_fig_ok"]:
         fig = v.clustering_visual(vals[:,0], vals[:,1], "HDBSCAN", st.session_state["cluster_label"])
 # in the very end clustering of hdbscan + umap
     
+
+# download table
+st.subheader(f'Do you wish to display the data after the {st.session_state["method"]} was applied and download it?')
+if st.button("Show table with data"):
+    st.dataframe(st.session_state["df_dimred"])
+                
 # download svg image
 
 if 'fig' in locals():
