@@ -446,10 +446,15 @@ if st.session_state["step_4_fig_ok"]:
 # in the very end clustering of hdbscan + umap
     
 
-# download table
-st.subheader(f'Do you wish to display the data after the {st.session_state["method"]} was applied and download it?')
-if st.button("Show table with data"):
-    st.dataframe(st.session_state["df_dimred"])
+# download final table
+if st.session_state["step_4_fig_ok"]:
+    with st.expander(label="Do you wish to display the data after processing and download it?", expanded=False):
+        st.subheader("Projected data and its classification:")
+        st.write("Navigate to the right upper corner of the table to download it")
+        final_table = pd.DataFrame(st.session_state["df_dimred"])
+        final_table['category'] = st.session_state["class_categories"]
+        final_table['probability'] = st.session_state["class_proba"]
+        st.dataframe(final_table)
                 
 # download svg image
 

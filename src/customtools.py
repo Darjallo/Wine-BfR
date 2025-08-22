@@ -224,6 +224,13 @@ def clustering(vals, groups, l):
     st.session_state["class_proba"] = probabilities
     
     #v.clustering_visual(vals[:,0], vals[:,1], "HDBSCAN", l)
+    
+   # final_table = pd.DataFrame(st.session_state["df_dimred"])
+    #st.write(type(labels))
+    # #final_table['category'] = labels
+    # #final_table['probability'] = probabilities
+    # #st.session_state["df_clust"] = final_table
+    
     pass
     
    
