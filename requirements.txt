@@ -1,4 +1,5 @@
 matplotlib
+openpyxl
 plotly
 streamlit
 scikit-learn
