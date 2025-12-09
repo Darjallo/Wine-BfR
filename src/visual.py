@@ -87,8 +87,8 @@ def vis_params(label):
         "circle", 
         "square", 
         "diamond",
-        "cross", 
-        "x", 
+        # "cross", 
+        # "x", 
         "triangle-up", 
         "triangle-down", 
         "triangle-left",
@@ -96,13 +96,13 @@ def vis_params(label):
         "pentagon", 
         "hexagon", 
         "hexagon2", 
-        "star",
-        "hexagram",
-        "star-triangle-up", 
-        "star-square", 
-        "star-diamond", 
-        "hourglass", 
-        "bowtie", 
+        # "star",
+        # "hexagram",
+        # "star-triangle-up", 
+        # "star-square", 
+        # "star-diamond", 
+        # "hourglass", 
+        # "bowtie", 
     ]
     
     
@@ -245,6 +245,10 @@ def clustering_visual(x, y, fig_title, label):
             hovertext=meta,
             hoverinfo='text'
         ))
+        
+    # plot noise separately
+    
+    
       
     #__________________________________________________________________________
     # Adding alternative "legend-like" annotations with symbols

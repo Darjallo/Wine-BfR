@@ -137,6 +137,8 @@ def file_upload(uploaded_file):
     try:
         df = ct.file2df(uploaded_file)
         st.session_state['df_raw'] = df
+        if len(df.columns)==1:
+            st.error('Check data format. The data has to contain at least one column with lavels or metadata.')
         return df
     except Exception as e:
         st.error(f"Error reading the file: {e}")

@@ -29,7 +29,11 @@ def file2df(uploaded_file):
         try:
             # Display message based on file type
             if uploaded_file.name.endswith(".csv"):
-                df = pd.read_csv(uploaded_file, sep=st.session_state['sep'])
+                try:
+                    df = pd.read_csv(uploaded_file, sep='\t')
+                except:
+                    st.error("Invalid data format.")
+                    df = pd.DataFrame()
             elif uploaded_file.name.endswith(".xlsx"):
                 df = pd.read_excel(uploaded_file)
             elif uploaded_file.name.endswith(".txt"):
@@ -41,7 +45,7 @@ def file2df(uploaded_file):
         except Exception as e:
             # Print the error type and message
             print(f"An error occurred: {type(e).__name__} - {e}")
-            return None
+            return pd.DataFrame()
     
 def german_df_processing(df):
     df_transformed = df.applymap(
