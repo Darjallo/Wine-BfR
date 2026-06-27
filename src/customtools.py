@@ -48,7 +48,7 @@ def file2df(uploaded_file):
             return pd.DataFrame()
     
 def german_df_processing(df):
-    df_transformed = df.applymap(
+    df_transformed = df.map(
         lambda x: float(x.replace(",", ".")) if isinstance(x, str) else x
     )
     return df_transformed       
@@ -111,17 +111,16 @@ def treshold(df):
 
     return df
  
-def feature_tr(t):
+@st.cache_data
+def feature_tr(df, t):
     """
     normalize row-wise, the sum along the row is 1
     apply treshold column-wise
     normalize the data again row-wise
    
     """
-    df = st.session_state['df_vals_no_filter']
-    df_copy = df.copy()
-    #st.write(df_copy)
     # normalize row-wise so that the sum along each row is 1
+    df_copy = df.copy()
     vals = normalize(df_copy.values, norm='l1', axis=1)
     df_n = pd.DataFrame(vals, columns=df_copy.columns)
     def process_col(col):
@@ -199,9 +198,9 @@ def dim_reduction(vals):
         metric = st.session_state["umap_metric"]
         embedding = apply_umap(vals, neigh, min_dist, ncomp, metric)
         # figure
-        v.dim_red_visual(embedding[:, 0], embedding[:, 1], 'Labels', 'UMAP')
+        fig = v.dim_red_visual(embedding[:, 0], embedding[:, 1], 'Labels', 'UMAP')
         
-        return embedding
+        return fig, embedding
 
 def group_naming(groups):
     # input: list where each entry has letters and id number

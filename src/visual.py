@@ -209,8 +209,8 @@ def dim_red_visual(x, y, legend_title, fig_title):
             ),
             showlegend=False  # Hide from the main legend
         ))
-    # Show plot in Streamlit
-    st.plotly_chart(fig)
+    return fig
+   # st.plotly_chart(fig)
 
     
 def clustering_visual(x, y, fig_title, label):
@@ -384,18 +384,17 @@ def clustering_visual(x, y, fig_title, label):
             align='left',
             xanchor='left' 
             )
-    st.plotly_chart(fig, use_container_width=True)
     
     return fig
     
 
-    
-def splmp_plot(df_norm, number):
+@st.cache_data    
+def splmp_plot(df, df_norm, number):
     """
     plot sample before and after processing
     """
     
-    df = st.session_state['df_vals']
+    #df = st.session_state['df_vals']
     x = list(df.columns)
     y_original = df.iloc[number, :].tolist()
     y_modified = df_norm.iloc[number, :].tolist()
@@ -428,7 +427,7 @@ def splmp_plot(df_norm, number):
         showlegend=False,
         margin=dict(t=50, b=30, l=30, r=30)
     )
+    return fig
     
-    st.plotly_chart(fig)
 
 
