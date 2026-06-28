@@ -275,7 +275,7 @@ if st.session_state["step_2_ok"]:
             
     if st.session_state["method"]=="UMAP":
         with col_step1_1:
-            umap_neigh, umap_min_dist, submit_button_3_2 = f.umap_params_form()
+            umap_neigh, umap_min_dist, ncomp, submit_button_3_2 = f.umap_params_form()
         
         if submit_button_3_2:
             st.session_state["umap_neigh"] = umap_neigh
@@ -328,7 +328,7 @@ if st.session_state["step_3_fig_ok"] or st.session_state["step_3_3_ok"]:
                       
     else:
         with col_step2_1:
-            umap_neigh, umap_min_dist, submit_button_4 = f.umap_params_form()
+            umap_neigh, umap_min_dist, ncomp, submit_button_4 = f.umap_params_form()
         st.session_state["umap_neigh"] = umap_neigh
         st.session_state["umap_min_dist"] = umap_min_dist
         scaled_dimred = scale_umap(st.session_state["df_norm"])

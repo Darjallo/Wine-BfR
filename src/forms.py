@@ -135,8 +135,8 @@ def umap_params_form():
                                 High values: tend to prevent clusters from forming, preserving the broad topological structure.")
         # controls how tightly UMAP is allowed to pack points together
         
-        # ncomp = st.slider("Select the distance", 
-        #                      min_value=1, max_value=3, value=2)
+        ncomp = st.number_input("Number of components (dimentions)", 
+                              min_value=1, value=2)
         # dimensionality of the reduced dimension space 
         
         metric = st.selectbox('Metric', ['euclidean', 'manhattan', 'chebyshev', 'minkowski', \
@@ -150,10 +150,10 @@ def umap_params_form():
         
         st.session_state["umap_neigh"] = int(neigh)
         st.session_state["umap_min_dist"] = float(min_dist)
-        #st.session_state["umap_ncomp"] = int(ncomp)
+        st.session_state["umap_ncomp"] = int(ncomp)
         st.session_state["umap_metric"] = str(metric)
         submit_button = st.form_submit_button("Submit")
-    return neigh, min_dist, submit_button
+    return int(neigh), float(min_dist), int(ncomp), submit_button
 
 
 # 5? HDBSCAN parameters
