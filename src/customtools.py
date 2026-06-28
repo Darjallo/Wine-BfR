@@ -107,7 +107,7 @@ def display_other_plot():
 def treshold(df):
     
     # threshold above 0
-    df = df.applymap(lambda x: 0 if (isinstance(x, (int, float)) and x < 0) else x)
+    df = df.map(lambda x: 0 if (isinstance(x, (int, float)) and x < 0) else x)
 
     return df
  
