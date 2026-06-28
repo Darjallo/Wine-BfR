@@ -151,7 +151,7 @@ def splmp(df):
     nmbr_valid_smpl = (df > 0).sum(axis=0)
 
     # Compute coefficient vector for all columns
-    coef = np.log((1 + tot_smpl_nmbr) / (1 + nmbr_valid_smpl))
+    coef = np.log10((1 + tot_smpl_nmbr) / (1 + nmbr_valid_smpl))
 
     # Create a mask for rows where x_j != 0
     mask_nonzero = x_j != 0
